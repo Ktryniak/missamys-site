@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js)
+   Miss Amy's Bakery - site helpers (mab.js) v1.1
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -9,8 +9,45 @@
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "1.0";
+  window.MAB = "1.1";
   var M = [];
+
+  /* ---------- Hide the loader Embed + menu above badges ---------- */
+  M.push(["embedfix", function(){
+    /* Hides the Embed block that loads this file (mab-loader-embed), with all the space around it,
+       and keeps the sticky menu above the spinning badges when the page scrolls. */
+    var D = document;
+    var S =
+      "[data-mabl]{height:0!important;min-height:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important}" +
+      "[data-block-purpose^=header],.w-header,header{z-index:40!important}";
+    function isLoader(f){
+      try {
+        if ((f.getAttribute("srcdoc") || "").indexOf("mab-js") > -1) return 1;
+        var d = f.contentDocument; if (!d || !d.documentElement) return 0;
+        var h = d.documentElement.innerHTML; if (!h || h.length < 40) return 0;   /* not loaded yet, check again later */
+        return h.indexOf("mab-js") > -1 ? 1 : -1;
+      } catch (e) { return -1; }                                                 /* other site (map etc.) */
+    }
+    function run(){
+      var fs = D.querySelectorAll("iframe:not([data-mabchk])");
+      for (var i = 0; i < fs.length; i++){
+        var f = fs[i], r = isLoader(f); if (!r) continue;
+        f.setAttribute("data-mabchk", "");
+        if (r < 0) continue;
+        for (var el = f.parentElement; el && el !== D.body; el = el.parentElement){
+          el.setAttribute("data-mabl", "");
+          if (el.hasAttribute("data-block-purpose")) {
+            var c = el.parentElement; if (c && c.classList.contains("w-cell") && c.children.length === 1) c.setAttribute("data-mabl", "");
+            break;
+          }
+        }
+      }
+    }
+    var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
+    var t; function q(){ clearTimeout(t); t = setTimeout(run, 120); }
+    new MutationObserver(q).observe(D.documentElement, { childList: true, subtree: true });
+    addEventListener("load", q); q(); setTimeout(q, 1000); setTimeout(q, 2500); setTimeout(q, 5000);
+  }]);
 
   /* ---------- Home banner ---------- */
   M.push(["hero", function(){
