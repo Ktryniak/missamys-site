@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v1.1
+   Miss Amy's Bakery - site helpers (mab.js) v1.2
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -9,8 +9,19 @@
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "1.1";
+  window.MAB = "1.2";
   var M = [];
+  /* run a part in the next frame, before the browser paints (no flash of the old design) */
+  function mabQ(id, f){ if (id) cancelAnimationFrame(id); return requestAnimationFrame(function(){ try { f(); } catch (e) {} }); }
+  /* while the page is still loading: keep the blocks hidden until they are styled (max 2.5 s), the menu stays visible */
+  if (document.readyState === "loading") {
+    var R = document.documentElement, sh = document.createElement("style");
+    sh.textContent = "html.mab-wait [data-block-purpose]:not([data-block-purpose^=header]){opacity:0!important}";
+    (document.head || R).appendChild(sh); R.classList.add("mab-wait");
+    var off = function(){ R.classList.remove("mab-wait"); };
+    document.addEventListener("DOMContentLoaded", function(){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ setTimeout(off, 60); }); }); });
+    setTimeout(off, 2500);
+  }
 
   /* ---------- Hide the loader Embed + menu above badges ---------- */
   M.push(["embedfix", function(){
@@ -44,7 +55,7 @@
       }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 120); }
+    var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(q).observe(D.documentElement, { childList: true, subtree: true });
     addEventListener("load", q); q(); setTimeout(q, 1000); setTimeout(q, 2500); setTimeout(q, 5000);
   }]);
@@ -117,7 +128,7 @@
       }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); }
+    var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(q).observe(D.documentElement, { childList: true, subtree: true });
     q();
   }]);
@@ -206,7 +217,7 @@
       }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); } try { run(); } catch (e) {}
+    var t; function q(){ t = mabQ(t, run); } try { run(); } catch (e) {}
     new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var t2 = ms[i].target; if (!(t2.closest && t2.closest(".fcl-row,.fcl-peek"))) { q(); return; } } }).observe(D.documentElement, { childList: true, subtree: true }); addEventListener("load", q); setTimeout(q, 1500); setTimeout(q, 4000); setTimeout(q, 8000);
   }]);
 
@@ -254,7 +265,7 @@
       }
     }
     var D = document, st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 120); }
+    var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(q).observe(D.documentElement, { childList: true, subtree: true, characterData: true });
     addEventListener("resize", q); q();
   }]);
@@ -354,7 +365,7 @@
       }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); }
+    var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(q).observe(D.documentElement, { childList: true, subtree: true });
     addEventListener("resize", q); q();
   }]);
@@ -428,7 +439,7 @@
       for (var b = 0; b < bs.length; b++){ bs[b].classList.add("mabq"); build(bs[b]); }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); } try { run(); } catch (e) {}
+    var t; function q(){ t = mabQ(t, run); } try { run(); } catch (e) {}
     new MutationObserver(q).observe(D.documentElement, { childList: true, subtree: true });
   }]);
 
@@ -509,7 +520,7 @@
       }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); }
+    var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(q).observe(D.documentElement, { childList: true, subtree: true });
     try { run(); } catch (e) {} addEventListener("load", q); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
@@ -581,7 +592,7 @@
       }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); }
+    var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(q).observe(D.documentElement, { childList: true, subtree: true });
     q();
   }]);
@@ -707,7 +718,7 @@
       });
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); }
+    var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (!(x.closest && x.closest(".mabsh-bd,.mabsh-hl"))) { q(); return; } } }).observe(D.documentElement, { childList: true, subtree: true, characterData: true });
     q();
   }]);
@@ -779,7 +790,7 @@
       }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); }
+    var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (!(x.closest && x.closest(".mabwh-bd"))) { q(); return; } } }).observe(D.documentElement, { childList: true, subtree: true });
     q();
   }]);
@@ -848,7 +859,7 @@
       }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); }
+    var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(q).observe(D.body, { childList: true, subtree: true });
     run(); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
@@ -1025,7 +1036,7 @@
       box.setAttribute("data-k", key); box.innerHTML = html;
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(build, 150); }
+    var t; function q(){ t = mabQ(t, build); }
     new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (!(x.closest && x.closest(".mabsz"))) { q(); return; } } }).observe(D.body, { childList: true, subtree: true, characterData: true });
     build(); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
@@ -1119,7 +1130,7 @@
       box.setAttribute("data-k", key); box.innerHTML = html;
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(build, 150); }
+    var t; function q(){ t = mabQ(t, build); }
     new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (!(x.closest && x.closest(".mabfl"))) { q(); return; } } }).observe(D.body, { childList: true, subtree: true, characterData: true });
     build(); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
@@ -1609,7 +1620,7 @@
     for (var j = 0; j < TOPICS.length; j++) if (hs && hs === slug(TOPICS[j])) cur = j;
 
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var tm; function q(){ clearTimeout(tm); tm = setTimeout(function(){ apply(false); }, 150); }
+    var tm; function q(){ tm = mabQ(tm, function(){ apply(false); }); }
     new MutationObserver(q).observe(D.body, { childList: true, subtree: true });
     q(); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
@@ -1745,7 +1756,7 @@
       fit();
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
-    var t; function q(){ clearTimeout(t); t = setTimeout(run, 150); } try { run(); } catch (e) {}
+    var t; function q(){ t = mabQ(t, run); } try { run(); } catch (e) {}
     new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (!(x.closest && x.closest(".mabft-word,.mabft-cr"))) { q(); return; } } }).observe(D.documentElement, { childList: true, subtree: true });
     addEventListener("resize", q); addEventListener("load", q); if (D.fonts && D.fonts.ready) D.fonts.ready.then(q); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
