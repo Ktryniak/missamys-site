@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v1.4
+   Miss Amy's Bakery - site helpers (mab.js) v1.5
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -9,7 +9,7 @@
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "1.4";
+  window.MAB = "1.5";
   var M = [];
   /* run a part in the next frame, before the browser paints (no flash of the old design) */
   function mabQ(id, f){ if (id) cancelAnimationFrame(id); return requestAnimationFrame(function(){ try { f(); } catch (e) {} }); }
@@ -1700,6 +1700,7 @@
     var WORD_SIZE = .92;                  /* how much of the footer width the big text takes (1 = full width) */
     var CREDIT = "Website designed by";  /* small line under the big text, "" = none */
     var CREDIT_NAME = "TryLab Studio", CREDIT_URL = "https://99designs.com/profiles/ksutryniak";
+    var LOGO_W = 290, LOGO_W_MOBILE = 250;   /* footer logo width in px: desktop, phone */
     var MENU_ROWS = 2;                    /* menu items per column on desktop */
     var SCALLOP = 64;                     /* width of one bubble on the top edge in px, 0 = straight edge */
     var FT_BG = "#F2D1D8";                /* footer color, used for the bubbles if Square does not give it in time */
@@ -1730,7 +1731,8 @@
       ".mabft .social-icons{grid-area:soc;margin-top:22px!important;align-self:end;justify-content:flex-start!important}" +
       ".mabft .copyright{grid-area:copy;align-self:center;text-align:right!important}" +
       /* logo */
-      ".mabft .w-sitelogo{max-width:200px}" +
+      ".mabft .w-sitelogo,.mabft .w-sitelogo img,.mabft .logo__link img{width:" + LOGO_W + "px!important;max-width:100%!important;height:auto!important;max-height:none!important}" +
+      "@media(max-width:767px){.mabft .w-sitelogo,.mabft .w-sitelogo img,.mabft .logo__link img{width:" + LOGO_W_MOBILE + "px!important}}" +
       /* menu in columns */
       ".mabft .nav--footer .nav__main{display:grid!important;grid-auto-flow:column;grid-template-rows:repeat(" + MENU_ROWS + ",auto);justify-content:start;gap:14px clamp(28px,4vw,56px);margin:0!important;padding:0!important;text-align:left!important}" +
       ".mabft .nav--footer .nav__item{margin:0!important;padding:0!important;display:block!important;line-height:1!important}" +
