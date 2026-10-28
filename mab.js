@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v1.5
+   Miss Amy's Bakery - site helpers (mab.js) v1.7
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -9,7 +9,7 @@
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "1.5";
+  window.MAB = "1.7";
   var M = [];
   /* run a part in the next frame, before the browser paints (no flash of the old design) */
   function mabQ(id, f){ if (id) cancelAnimationFrame(id); return requestAnimationFrame(function(){ try { f(); } catch (e) {} }); }
@@ -331,12 +331,18 @@
     var ACCENT  = "#9B1B45";                /* date, stub text, button */
     var INK     = "#9B1B45";                /* title and text */
     var STUB    = "date";                   /* text on the stub: "date", or your own, e.g. "ADMIT ONE" */
-    var PHOTO   = false;                    /* true = show the event photo on the left of the ticket */
+    var PHOTO   = "desktop";                /* event photo on the left: "desktop" = only on computers, true = everywhere, false = never */
     /* Event descriptions: add a normal Square Text block anywhere on the page. First line: EVENT TEXTS
        Then one line per event:  Event title | description text
        On the live site that block is hidden and each text goes into the ticket with the same title. */
     var MARKER  = "EVENT TEXTS";
-    var MAX     = 2;                        /* show at most this many events (the next ones by date) */
+    var MAX     = 6;                        /* show at most this many events (the next ones by date) */
+    /* Short text under the title comes from the event itself in Square:
+       Items > the event > Optimise search and sharing > Search engine optimisation > description.
+       If that is empty, the start of the normal description is used. */
+    var AUTO_DESC = true, DESC_MAX = 170;   /* longest text in characters, cut at the end of a sentence */
+    var SLIDER = false;                     /* phones: true = events as a swipe slider, false = one under the other */
+    var SLIDE_EVERY = 6;                    /* phones with 2+ events: seconds between slides, 0 = no auto play */
     /* ===================== */
     var D = document;
     var T = ".mabtx .featured-event.featured-event";
@@ -349,9 +355,10 @@
       T + " .hover-fade-80," + T + ".hover-fade-80:hover{opacity:1!important}" +
       T + ":before{content:\"\";position:absolute;top:16px;bottom:16px;right:var(--stub);border-left:2px dashed " + INK + "55}" +
       T + ":after{content:attr(data-stub);position:absolute;top:0;bottom:0;right:0;width:var(--stub);display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;transform:rotate(180deg);font:700 .78rem/1 \"Niramit Bold\",\"Niramit\",sans-serif;letter-spacing:.2em;text-transform:uppercase;color:" + ACCENT + ";white-space:nowrap;overflow:hidden}" +
-      T + ">.w-wrapper:first-child{grid-column:1;grid-row:1/3;display:var(--phd)!important;padding:18px 0 18px 18px!important;margin:0!important}" +
-      T + ">.w-wrapper:first-child .figure__aspect-ratio{height:100%!important;aspect-ratio:auto!important;border-radius:4px;overflow:hidden}" +
-      T + ">.w-wrapper:first-child img{width:100%!important;height:100%!important;object-fit:cover!important}" +
+      T + ">.w-wrapper:first-child{grid-column:1;grid-row:1/3;display:var(--phd)!important;position:relative!important;padding:0!important;margin:0!important;min-height:100%}" +
+      T + ">.w-wrapper:first-child figure{position:absolute!important;inset:16px 0 16px 16px;margin:0!important;border-radius:10px;overflow:hidden}" +
+      T + ">.w-wrapper:first-child figure *{position:absolute!important;inset:0;width:100%!important;height:100%!important;padding:0!important;aspect-ratio:auto!important}" +
+      T + ">.w-wrapper:first-child img{object-fit:cover!important}" +
       T + " .featured-event__details{grid-column:2;grid-row:1;display:block!important;padding:clamp(28px,3.5vw,44px) clamp(24px,3.5vw,48px) 0!important;margin:0!important;text-align:left!important}" +
       T + " .featured-event__date-time{display:flex!important;flex-wrap:wrap;gap:4px 12px;justify-content:flex-start!important;margin:0 0 14px!important}" +
       T + " .featured-event__date," + T + " .featured-event__time{font-family:\"Niramit Bold\",\"Niramit\",sans-serif!important;font-weight:700!important;font-size:.8rem!important;line-height:1.2!important;letter-spacing:.16em!important;text-transform:uppercase!important;color:" + ACCENT + "!important;background:none!important;padding:0!important;margin:0!important;border:0!important}" +
@@ -362,9 +369,20 @@
       T + " .featured-event__button-wrapper{grid-column:2;grid-row:2;padding:26px clamp(24px,3.5vw,48px) clamp(28px,3.5vw,44px)!important;margin:0!important;display:flex!important;justify-content:flex-start!important}" +
       T + " .mabtx-desc{margin:14px 0 0!important;padding:0!important;font-family:\"Niramit Regular\",\"Niramit\",sans-serif!important;font-size:1.05rem!important;line-height:1.5!important;color:" + INK + "!important;text-align:left!important;max-width:46ch}" +
       ".mabtx-hidden{display:none!important}" +
-      ".mabtx .w-grid.mabtx-one{grid-template-columns:minmax(0,900px)!important}" +
+      ".mabtx .w-grid.mabtx-one{grid-template-columns:minmax(0,1fr)!important}" +
+      "@media(min-width:768px){.mabtx .mabtx-one " + T.slice(7) + "{min-height:320px}}" +
       T + "{border:1px solid rgba(155,27,69,.35)!important;border-radius:14px!important}" +
       T + " .featured-event__button-wrapper .w-button{width:auto!important}" +
+      ".mabtx-dots{display:none}" +
+      "@media(min-width:768px){.mabtx .w-grid>.grid__item.mabtx-wide{grid-column:1/-1}}" +
+      "@media(max-width:767px){" +
+        ".mabtx .w-grid.mabtx-many{display:flex!important;overflow-x:auto!important;scroll-snap-type:x mandatory;gap:14px!important;padding:2px 2px 6px!important;scrollbar-width:none;-webkit-overflow-scrolling:touch}" +
+        ".mabtx .w-grid.mabtx-many::-webkit-scrollbar{display:none}" +
+        ".mabtx .w-grid.mabtx-many>.grid__item{flex:0 0 88%!important;width:88%!important;scroll-snap-align:center}" +
+        ".mabtx-dots{display:flex;justify-content:center;gap:8px;margin:16px 0 0}" +
+        ".mabtx-dots button{width:9px;height:9px;padding:0;border:1.5px solid " + ACCENT + ";border-radius:50%;background:transparent;cursor:pointer}" +
+        ".mabtx-dots button.on{background:" + ACCENT + "}" +
+      "}" +
       "@media(max-width:600px){" + T + "{min-height:0}" +
         T + " .featured-event__title h4{font-size:1.8rem!important}" +
         T + " .featured-event__details," + T + " .featured-event__button-wrapper{padding-left:22px!important;padding-right:18px!important}}";
@@ -391,6 +409,50 @@
       }
       return map;
     }
+    var cache = {}, busy = {};
+    try { cache = JSON.parse(sessionStorage.getItem("mabtx") || "{}"); } catch (e) {}
+    function cut(t){
+      t = (t || "").replace(/\s+/g, " ").trim(); if (t.length <= DESC_MAX) return t;
+      var s = t.slice(0, DESC_MAX), e = Math.max(s.lastIndexOf(". "), s.lastIndexOf("! "), s.lastIndexOf("? "));
+      return e > 40 ? s.slice(0, e + 1) : s.replace(/\s+\S*$/, "") + "\u2026";
+    }
+    function desc(url, done){
+      if (cache[url] !== undefined) { done(cache[url]); return; }
+      if (busy[url]) return; busy[url] = 1;
+      fetch(url, { credentials: "same-origin" }).then(function(r){ return r.ok ? r.text() : ""; }).then(function(html){
+        var d = new DOMParser().parseFromString(html, "text/html"), m = d.querySelector("meta[name=description]") || d.querySelector("meta[property='og:description']");
+        cache[url] = cut(m ? m.getAttribute("content") : ""); try { sessionStorage.setItem("mabtx", JSON.stringify(cache)); } catch (e) {}
+        done(cache[url]);
+      }).catch(function(){ cache[url] = ""; });
+    }
+    function slider(bl, grid, n){
+      var many = SLIDER && n > 1; grid.classList.toggle("mabtx-many", many);
+      var dots = bl.querySelector(".mabtx-dots");
+      if (!many) { if (dots) dots.remove(); return; }
+      if (!dots || dots.children.length !== n) {
+        if (dots) dots.remove();
+        dots = D.createElement("div"); dots.className = "mabtx-dots";
+        for (var k = 0; k < n; k++) { var b = D.createElement("button"); b.type = "button"; b.setAttribute("aria-label", "Event " + (k + 1)); b.mabk = k; dots.appendChild(b); }
+        dots.addEventListener("click", function(e){ var b = e.target.closest("button"); if (b) go(grid, b.mabk); grid.mabStop = 1; });
+        grid.insertAdjacentElement("afterend", dots);
+      }
+      if (!grid.mabS) {
+        grid.mabS = 1;
+        grid.addEventListener("scroll", function(){ mark(grid); }, { passive: true });
+        grid.addEventListener("touchstart", function(){ grid.mabStop = 1; }, { passive: true });
+        if (SLIDE_EVERY) setInterval(function(){
+          if (grid.mabStop || innerWidth >= 768 || D.hidden || !grid.classList.contains("mabtx-many")) return;
+          var its = vis(grid), cur = idx(grid); go(grid, cur + 1 >= its.length ? 0 : cur + 1);
+        }, SLIDE_EVERY * 1000);
+      }
+      mark(grid);
+    }
+    function vis(grid){ return [].filter.call(grid.children, function(x){ return x.classList.contains("grid__item") && x.style.display !== "none"; }); }
+    function idx(grid){ var its = vis(grid), best = 0, bd = 1e9, gl = grid.getBoundingClientRect().left;
+      its.forEach(function(it, k){ var dd = Math.abs(it.getBoundingClientRect().left - gl); if (dd < bd) { bd = dd; best = k; } }); return best; }
+    function go(grid, k){ var it = vis(grid)[k]; if (it) grid.scrollTo({ left: it.offsetLeft - grid.offsetLeft - (grid.clientWidth - it.clientWidth) / 2, behavior: "smooth" }); }
+    function mark(grid){ var dots = grid.parentNode && grid.parentNode.querySelector(".mabtx-dots"); if (!dots) return; var k = idx(grid);
+      [].forEach.call(dots.children, function(b, j){ b.classList.toggle("on", j === k); }); }
     function run(){
       var TX = texts();
       var bs = D.querySelectorAll("[data-block-purpose^=featured-events] .w-block");
@@ -399,7 +461,8 @@
         var wr = bl.closest("[data-block-purpose]"); if (wr) { wr.style.flex = "1 1 100%"; wr.style.width = "100%"; wr.style.maxWidth = "100%"; }
         var items = bl.querySelectorAll(".w-grid > .grid__item"), shown = 0;
         for (var g = 0; g < items.length; g++){ var vis = shown < MAX; items[g].style.display = vis ? "" : "none"; if (vis) shown++; }
-        var grid = bl.querySelector(".w-grid"); if (grid) grid.classList.toggle("mabtx-one", shown === 1);
+        for (var g2 = 0; g2 < items.length; g2++) items[g2].classList.toggle("mabtx-wide", shown > 1 && shown % 2 === 1 && g2 === shown - 1);
+        var grid = bl.querySelector(".w-grid"); if (grid) { grid.classList.toggle("mabtx-one", shown === 1); slider(bl, grid, shown); }
         var cards = bl.querySelectorAll(".featured-event");
         var sec = bg(bl);
         for (var i = 0; i < cards.length; i++){
@@ -407,11 +470,21 @@
           s.setProperty("--tk", TICKETS[i % TICKETS.length]);
           s.setProperty("--sec", sec);
           s.setProperty("--stub", innerWidth < 600 ? "48px" : "66px");
-          s.setProperty("--ph", PHOTO ? (innerWidth < 600 ? "96px" : "170px") : "0px");
-          s.setProperty("--phd", PHOTO ? "block" : "none");
+          var ph = PHOTO === true || (PHOTO === "desktop" && innerWidth >= 768);
+          if (ph && !c.querySelector(".w-wrapper:first-child img")) ph = false;      /* no photo in Square: no empty space */
+          s.setProperty("--ph", ph ? (shown === 1 ? "minmax(0,.8fr)" : (innerWidth < 600 ? "96px" : "190px")) : "0px");
+          s.setProperty("--phd", ph ? "block" : "none");
           var h = c.querySelector(".featured-event__title h4"), tl = h ? h.textContent.trim().toLowerCase() : "", dsc = c.querySelector(".mabtx-desc");
-          if (TX[tl]) { if (!dsc) { dsc = D.createElement("p"); dsc.className = "mabtx-desc"; h.closest(".featured-event__title").insertAdjacentElement("afterend", dsc); } if (dsc.textContent !== TX[tl]) dsc.textContent = TX[tl]; }
-          else if (dsc) dsc.remove();
+          var put = function(card, hh, txt){ var ds = card.querySelector(".mabtx-desc");
+            if (txt) { if (!ds) { ds = D.createElement("p"); ds.className = "mabtx-desc"; hh.closest(".featured-event__title").insertAdjacentElement("afterend", ds); } if (ds.textContent !== txt) ds.textContent = txt; }
+            else if (ds) ds.remove(); };
+          if (h && TX[tl]) put(c, h, TX[tl]);
+          else if (h && AUTO_DESC) {
+            var lk = c.querySelector("a[href]"), url = lk && lk.getAttribute("href");
+            var same = false; try { same = !!url && new URL(url, location.href).origin === location.origin; } catch (e) {}
+            if (same) (function(card, hh){ desc(url, function(txt){ put(card, hh, txt); }); })(c, h);
+            else put(c, h, "");
+          } else put(c, h, "");
           var d = c.querySelector(".featured-event__date");
           c.setAttribute("data-stub", STUB === "date" ? (d ? d.textContent.trim() : "Tickets") : STUB);
           if (!c.mabc) { c.mabc = 1; c.addEventListener("click", function(e){ var x = this.querySelector(".featured-event__button-wrapper .w-button"); if (x && !x.contains(e.target)) x.click(); }); }
