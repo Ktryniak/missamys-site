@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v2.7
+   Miss Amy's Bakery - site helpers (mab.js) v3.0
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -9,7 +9,7 @@
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "2.7";
+  window.MAB = "3.0";
   var M = [];
   /* run a part in the next frame, before the browser paints (no flash of the old design) */
   function mabQ(id, f){ if (id) cancelAnimationFrame(id); return requestAnimationFrame(function(){ try { f(); } catch (e) {} }); }
@@ -66,6 +66,17 @@
     document.addEventListener("DOMContentLoaded", function(){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ setTimeout(off, 60); }); }); });
     setTimeout(off, 2500);
   }
+
+  /* ---------- Secondary buttons: no flash of the plain Square button ----------
+     The site-wide "secondary button" code turns plain (non-filled) Square links into arrow links (class mf)
+     a moment after the page shows. Until then they are invisible, so they do not flash in the old style.
+     If a link is never turned into an arrow link, it still shows up after 2.5 s. */
+  (function(){
+    var s = document.createElement("style");
+    s.textContent = "main .button-wrapper a.w-button:not(.w-button--primary):not(.mf),main .button a.w-button:not(.w-button--primary):not(.mf){visibility:hidden;animation:mabMfShow 0s 2.5s forwards}" +
+      "@keyframes mabMfShow{to{visibility:visible}}";
+    (document.head || document.documentElement).appendChild(s);
+  })();
 
   /* ---------- Hide the loader Embed + menu above badges ---------- */
   M.push(["embedfix", function(){
@@ -849,7 +860,7 @@
                 center: ["Any", "idea", "any day"], caps: true, ring: "Miss Amy\u2019s Bakery \u00B7 Miss Amy\u2019s Bakery \u00B7 " },
       zhjUlG: { ratio: "4/3", w: "100%", tight: true,  shape: "rect", focus: "50% 50%", hl: "crowd", exact: true,
                 center: ["Dessert", "bars", "& more"], caps: true, ring: "Catering \u00B7 Events \u00B7 Miss Amy\u2019s Bakery \u00B7 " },
-      SmLbTp: { ratio: "4/3", w: "100%", tight: true,  shape: "rect", focus: "50% 50%", hl: "friends", exact: false, side: "right",
+      OqYpJk: { ratio: "4/3", w: "100%", tight: true,  shape: "rect", focus: "50% 50%", hl: "friends", exact: false, side: "right",
                 center: ["Since", "2018", "Wooster"], caps: false, ring: "Custom orders \u00B7 Weddings \u00B7 Daily menu \u00B7 " }   /* Contact */
     };
     var BLUSH = "#F9CFD8", BADGE_BG = "#81D8D0", BADGE_FG = "#9B1B45", SIZE = 160;
@@ -975,6 +986,7 @@
     var FOCUS = "50% 18%";              /* which part of the photo stays visible: "50% 0%" = top, "50% 50%" = center */
     var CENTER = ["Say", "I DO", "to dessert"];
     var RING = "Wedding cakes \u00B7 Cupcakes \u00B7 Dessert bars \u00B7 ";
+    var HIGHLIGHT = "day";              /* word in the headline on a pink tag, like the other banners ("" = none) */
     var BADGE_BG = "#81D8D0", BADGE_FG = "#9B1B45", SIZE = 170;
     /* ===================== */
     var D = document, R = SIZE / 2 - 12, fs = Math.min(14, (2 * Math.PI * R) / RING.length * 0.92);
@@ -986,6 +998,7 @@
       X + ">.w-cell:last-child{order:1;margin:0 auto!important}" +
       X + ">.w-cell:first-child{order:2;margin:clamp(28px,3.5vw,44px) 0 0!important;max-width:100%!important;flex:none!important;width:100%!important}" +
       ".mabwh .mabwh-art{position:relative!important}" +
+      ".mabwh .mabwh-hl{display:inline-block;background:#F9CFD8;padding:0 .12em;border-radius:.12em;transform:rotate(-2deg)}" +
       ".mabwh .mabwh-art figure{margin:0!important}" +
       ".mabwh .mabwh-art .figure__aspect-ratio{display:block!important;position:relative!important;height:" + PHOTO_H + "!important;aspect-ratio:auto!important;padding:0!important;border-radius:18px!important;overflow:hidden!important}" +
       ".mabwh .mabwh-art .figure__aspect-ratio .image,.mabwh .mabwh-art img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;object-position:" + FOCUS + "!important}" +
@@ -1011,6 +1024,13 @@
         var wrap = D.getElementById(BLOCKS[b]); if (!wrap) continue;
         var bl = wrap.querySelector(".w-block"); if (!bl) continue;
         if (!bl.classList.contains("mabwh")) bl.classList.add("mabwh");
+        if (HIGHLIGHT && !bl.querySelector(".mabwh-hl")) {
+          var h = bl.querySelector("h1,h2");
+          if (h) { var tw = D.createTreeWalker(h, NodeFilter.SHOW_TEXT), n, re = new RegExp("\\b(" + HIGHLIGHT + ")\\b", "i");
+            while ((n = tw.nextNode())) { var m = n.nodeValue.match(re); if (!m) continue;
+              var x = n.splitText(m.index); x.splitText(m[0].length);
+              var sp = D.createElement("span"); sp.className = "mabwh-hl"; sp.textContent = x.nodeValue; x.parentNode.replaceChild(sp, x); break; } }
+        }
         var fig = bl.querySelector("figure"); if (!fig) continue;
         var art = fig.parentElement; if (!art.classList.contains("mabwh-art")) art.classList.add("mabwh-art");
         if (!art.querySelector(".mabwh-bd") && (art.mabT | 0) < 6) {
@@ -1030,7 +1050,7 @@
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
     var t; function q(){ t = mabQ(t, run); }
-    new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (!(x.closest && x.closest(".mabwh-bd"))) { q(); return; } } }).observe(D.documentElement, { childList: true, subtree: true });
+    new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (!(x.closest && x.closest(".mabwh-bd,.mabwh-hl"))) { q(); return; } } }).observe(D.documentElement, { childList: true, subtree: true, characterData: true });
     q();
   }]);
 
@@ -1904,12 +1924,12 @@
 
   /* ---------- Contact page text ---------- */
   M.push(["contact", function(){
-    /* The photo, badge and pink tag come from "shero" (CFG line SmLbTp). This part tidies the text:
+    /* The photo, badge and pink tag come from "shero" (CFG line OqYpJk). This part tidies the text:
        everything left aligned, the first line as a lead, and every EMPTY line in the Square text
        becomes a thin raspberry divider, so each group (email, phone, visit) reads as its own row.
        Only styles, nothing is moved, so editing the text in Square stays safe.
        ===== EDIT HERE ===== */
-    var BLOCK = "SmLbTp";
+    var BLOCK = "OqYpJk";
     var INK = "#9B1B45", LINE = "rgba(155,27,69,.35)";
     /* ===================== */
     var D = document, B = "#" + BLOCK + " .w-block", G = B + " .element-group";
@@ -1934,9 +1954,29 @@
       /* Buttons: in this block Square puts the class "button" on the link itself (other pages wrap it in a div.button),
          so wrapper styles hit the filled button and its text went raspberry on raspberry. Same look as everywhere: */
       "a.button.w-button:not(.mf):not(.mab-arrowbtn){background-color:var(--color-main)!important;opacity:1!important}" +
-      "a.button.w-button:not(.mf):not(.mab-arrowbtn)>span{position:relative;z-index:2}" +
+      "a.button.w-button:not(.mf):not(.mab-arrowbtn){isolation:isolate}" +
+      "a.button.w-button:not(.mf):not(.mab-arrowbtn)>span{position:relative!important;z-index:9!important}" +
+      "a.button.w-button:not(.mf):not(.mab-arrowbtn)>.bb{z-index:0!important}" +
       "a.button.w-button:not(.mf):not(.mab-arrowbtn) *:not(.bb){color:var(--color-contrast,#fff)!important;opacity:1!important;visibility:visible!important}";
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
+  }]);
+
+  /* ---------- Square order window (item options): question titles ---------- */
+  M.push(["omodal", function(){
+    /* The window that opens when someone orders an item or an event ticket (options, text fields, checkboxes).
+       Square shows the question titles small and black; here they are bigger, raspberry and in capitals.
+       Only this window is touched (it is found by aria-labelledby="appsite-order-modal-title").
+       ===== EDIT HERE ===== */
+    var INK = "#9B1B45";
+    var SIZE = "1.06rem", SIZE_MOBILE = "1rem";   /* title size: desktop, phone */
+    var CAPS = true;                               /* true = titles in capitals */
+    /* ===================== */
+    var W = "[aria-labelledby=appsite-order-modal-title]";
+    var BOLD = "\"Niramit Bold\",\"Niramit\",sans-serif";
+    var S =
+      W + " .form-label{font-family:" + BOLD + "!important;font-weight:700!important;font-size:" + SIZE + "!important;line-height:1.3!important;letter-spacing:" + (CAPS ? ".08em" : "0") + "!important;" + (CAPS ? "text-transform:uppercase!important;" : "") + "color:" + INK + "!important}" +
+      "@media(max-width:767px){" + W + " .form-label{font-size:" + SIZE_MOBILE + "!important}}";
+    var st = document.createElement("style"); st.textContent = S; document.head.appendChild(st);
   }]);
 
   /* ---------- Mobile menu (all pages) ---------- */
