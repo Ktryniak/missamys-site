@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v2.6
+   Miss Amy's Bakery - site helpers (mab.js) v2.7
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -9,7 +9,7 @@
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "2.6";
+  window.MAB = "2.7";
   var M = [];
   /* run a part in the next frame, before the browser paints (no flash of the old design) */
   function mabQ(id, f){ if (id) cancelAnimationFrame(id); return requestAnimationFrame(function(){ try { f(); } catch (e) {} }); }
@@ -1989,7 +1989,8 @@
       N + " .subnav__nested .subnav-icon{display:grid!important;place-items:center!important;width:36px!important;height:36px!important;padding:0!important;margin:0!important;box-sizing:border-box!important;line-height:0!important;border:1.5px solid " + INK + ";border-radius:50%;color:" + INK + "!important;flex:none;transform-origin:50% 50%!important}" +
       N + " .subnav__nested .subnav-icon .icon{--color:" + INK + "!important;--icon-size:14px!important;color:" + INK + "!important;display:block!important;position:static!important;width:14px!important;height:14px!important;margin:0!important;padding:0!important;inset:auto!important;transform-origin:50% 50%!important}" +
       N + " .subnav__nested .subnav-icon svg{display:block!important;width:100%!important;height:100%!important}" +
-      L + ">.nav__item>a," + N + " .subnav__nested .parent-link{border:0!important;box-shadow:none!important}" +
+      L + ">.nav__item>a," + N + " .subnav__nested .parent-link{border:0!important;box-shadow:none!important;outline:0!important}" +
+      L + ">.nav__item>a:not(.router-link-exact-active)," + N + " .subnav__nested .parent-link:not(.router-link-exact-active){background:none!important}" +
       L + ">.nav__item>a:before," + L + ">.nav__item>a:after," + N + " .subnav__nested .parent-link:before," + N + " .subnav__nested .parent-link:after," + L + ">.nav__item:before," + L + ">.nav__item:after{display:none!important;content:none!important}" +
       N + " .subnav__nested .nested-menu{margin:0!important;padding:0 0 12px!important;text-align:" + ALIGN + "!important}" +
       N + " .subnav__nested .nested-menu .nav__item{margin:0!important;padding:0!important;border:0!important}" +
