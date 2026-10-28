@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v2.1
+   Miss Amy's Bakery - site helpers (mab.js) v2.5
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -9,14 +9,58 @@
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "2.1";
+  window.MAB = "2.5";
   var M = [];
   /* run a part in the next frame, before the browser paints (no flash of the old design) */
   function mabQ(id, f){ if (id) cancelAnimationFrame(id); return requestAnimationFrame(function(){ try { f(); } catch (e) {} }); }
+  /* ----- shared helpers for the Square editor ----- */
+  /* true inside the Square editor (not on the live site, not in Preview) */
+  var MAB_ED = false;
+  try { MAB_ED = window.top !== window && !/preview/i.test(window.top.location.href); } catch (e) { MAB_ED = window.top !== window; }
+  /* mabEd(el, "text"): editor only, a dashed raspberry frame with a small note on top, so Amy sees where to edit */
+  function mabEd(el, txt){ if (MAB_ED && el && el.getAttribute("data-mabed") !== txt) el.setAttribute("data-mabed", txt); }
+  if (MAB_ED) {
+    var edst = document.createElement("style");
+    edst.textContent = "[data-mabed]{outline:2px dashed #9B1B45!important;outline-offset:-4px;position:relative}" +
+      "[data-mabed]:before{content:attr(data-mabed);position:absolute;z-index:6;top:8px;right:8px;max-width:min(520px,calc(100% - 16px));background:#9B1B45;color:#fff;font:700 11px/1.4 sans-serif;letter-spacing:.06em;text-transform:uppercase;text-align:left;padding:5px 9px;border-radius:5px;pointer-events:none;white-space:normal}" +
+      ".mabprev{pointer-events:none!important;position:relative;margin-bottom:28px!important}" +
+      ".mabprev:before{content:\"PREVIEW: how it looks on the live site. Edit in the dashed box below\";display:block;margin:0 0 12px;font:700 11px/1.4 sans-serif;letter-spacing:.06em;color:#9B1B45}";
+    (document.head || document.documentElement).appendChild(edst);
+  }
+  /* mabPrev(src): editor only. Puts a live copy of a Square grid ABOVE it (class mabprev) for the designed look,
+     and keeps the original grid plain and editable below. Design CSS then targets ".mabprev" in the editor. */
+  function mabPrev(src, label){
+    if (!MAB_ED || !src) return null;
+    var prev = src.previousElementSibling; if (!(prev && prev.classList.contains("mabprev"))) prev = null;
+    var key = src.innerHTML.length + "|" + src.textContent;
+    if (!prev || prev.mabK !== key) {
+      var c = src.cloneNode(true); c.classList.add("mabprev"); c.setAttribute("aria-hidden", "true"); c.mabK = key;
+      var ids = c.querySelectorAll("[id]"); for (var i = 0; i < ids.length; i++) ids[i].removeAttribute("id");
+      if (prev) prev.replaceWith(c); else src.parentNode.insertBefore(c, src);
+      prev = c;
+    }
+    mabEd(src, label);
+    return prev;
+  }
+  /* mabBg(block, fallback): the background color picked for the block in Square.
+     Cream (the page color) or nothing picked = fallback, so the panel never disappears into the page. */
+  var mabProbe = null;
+  function mabCol(c){
+    if (!c) return "";
+    if (!mabProbe) { mabProbe = document.createElement("i"); mabProbe.style.display = "none"; (document.body || document.documentElement).appendChild(mabProbe); }
+    mabProbe.style.color = ""; mabProbe.style.color = c; return mabProbe.style.color ? getComputedStyle(mabProbe).color : "";
+  }
+  function mabBg(bl, fallback, page){
+    var v = (bl.style.getPropertyValue("background-color") || "").trim();
+    var m = v.match(/^var\(\s*(--[^,)\s]+)/); if (m) v = getComputedStyle(bl).getPropertyValue(m[1]).trim();
+    var c = mabCol(v);
+    if (!c || c === "rgba(0, 0, 0, 0)" || c === mabCol(page || "#F7EFE6")) return fallback;
+    return c;
+  }
   /* while the page is still loading: keep the blocks hidden until they are styled (max 2.5 s), the menu stays visible */
   if (document.readyState === "loading") {
     var R = document.documentElement, sh = document.createElement("style");
-    sh.textContent = "html.mab-wait [data-block-purpose]:not([data-block-purpose^=header]){opacity:0!important}";
+    sh.textContent = "html.mab-wait [data-block-purpose]:not([data-block-purpose^=header]):not([data-block-purpose^=nav-mobile]):not([data-block-purpose^=cart]){opacity:0!important}";
     (document.head || R).appendChild(sh); R.classList.add("mab-wait");
     var off = function(){ R.classList.remove("mab-wait"); };
     document.addEventListener("DOMContentLoaded", function(){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ setTimeout(off, 60); }); }); });
@@ -796,14 +840,17 @@
        ratio: photo shape "4/3" or "1/1".  w: photo width on desktop.  tight: desktop banner right under the menu.
        shape: "rect" or "arch".  focus: visible part of the photo ("50% 0%" = top).
        hl: word on a pink tag ("" = none), exact: true = only this exact spelling (your, not Your).
-       center: badge middle lines (2nd is big), caps: big line in capitals.  ring: text turning around. */
+       center: badge middle lines (2nd is big), caps: big line in capitals.  ring: text turning around.
+       side: "right" = badge on the lower right of the photo on desktop (for a photo on the left of the page). */
     var CFG = {
       kXWxIF: { ratio: "4/3", w: "100%", tight: false, shape: "rect", focus: "50% 15%", hl: "big",   exact: false,
                 center: ["Since", "2018"], caps: false, ring: "Wooster, Ohio \u00B7 #SpreadTheSparkle \u00B7 " },
       ugclAP: { ratio: "4/3", w: "100%", tight: true,  shape: "rect", focus: "50% 50%", hl: "your",  exact: true,
                 center: ["Any", "idea", "any day"], caps: true, ring: "Miss Amy\u2019s Bakery \u00B7 Miss Amy\u2019s Bakery \u00B7 " },
       zhjUlG: { ratio: "4/3", w: "100%", tight: true,  shape: "rect", focus: "50% 50%", hl: "crowd", exact: true,
-                center: ["Dessert", "bars", "& more"], caps: true, ring: "Catering \u00B7 Events \u00B7 Miss Amy\u2019s Bakery \u00B7 " }
+                center: ["Dessert", "bars", "& more"], caps: true, ring: "Catering \u00B7 Events \u00B7 Miss Amy\u2019s Bakery \u00B7 " },
+      SmLbTp: { ratio: "4/3", w: "100%", tight: true,  shape: "rect", focus: "50% 50%", hl: "friends", exact: false, side: "right",
+                center: ["Since", "2018", "Wooster"], caps: false, ring: "Custom orders \u00B7 Weddings \u00B7 Daily menu \u00B7 " }   /* Contact */
     };
     var BLUSH = "#F9CFD8", BADGE_BG = "#81D8D0", BADGE_FG = "#9B1B45", SIZE = 160;
     /* Optional editable badge: a Square Text block on the page with 3 lines: BADGE / Any | idea | any day / ring text.
@@ -851,6 +898,7 @@
         X + " .mabsh-art .figure__aspect-ratio{aspect-ratio:" + c.ratio + "!important;border-radius:" + (c.shape === "arch" ? "50% 50% 18px 18px / 40% 40% 18px 18px" : "18px") + "!important}" +
         X + " .mabsh-art .figure__aspect-ratio .image," + X + " .mabsh-art img{object-position:" + c.focus + "!important}" +
         (c.caps ? X + " .mabsh-mid b{text-transform:uppercase}" : "") +
+        (c.side === "right" ? "@media(min-width:768px){" + X + " .mabsh-bd{left:auto;right:-" + Math.round(SIZE * 0.45) + "px}}" : "") +
         (c.tight ? "@media(min-width:768px){" + X + "{padding-top:0!important;margin-top:0!important}" + X + ">.container{padding-top:16px!important;margin-top:0!important}" +
           X + ">.container>.w-container," + X + " .text-image-row," + X + " .text-image-container{margin-top:0!important;padding-top:0!important}}" : "");
     });
@@ -1016,10 +1064,11 @@
   M.push(["gtk", function(){
     /* ===== EDIT HERE =====
        BLOCKS: id of the Square block(s) (element with class w-block-wrapper).
-       PANEL: "" = use the block color from Square, or set one, e.g. "#F9CFD8" (pink) / "#D5E6C8" (pistachio).
+       PANEL COLOR: Amy picks it herself in Square = the background color of the block.
+                    If the block is cream (or no color), DEFAULT is used. PANEL = force one color and ignore Square.
        PAGE: color around the panel. */
     var BLOCKS = ["XUWBrN", "eIfRPa"];   /* Custom Cakes "Good to know", Catering "Everyone gets a treat" */
-    var PANEL = "", PAGE = "#F7EFE6";
+    var PANEL = "", DEFAULT = "#D5E6C8", PAGE = "#F7EFE6";
     /* ===================== */
     var D = document;
     var C = ".mabgk>.container", ROW = C + ">.w-container>.w-cell>.w-container";
@@ -1042,16 +1091,16 @@
       for (var b = 0; b < BLOCKS.length; b++){
         var w = D.getElementById(BLOCKS[b]); if (!w) continue;
         var bl = w.querySelector(".w-block"); if (!bl) continue;
-        if (!bl.mabgk) {
-          var c = PANEL; if (!c) { var v = getComputedStyle(bl).backgroundColor; if (v && v !== "rgba(0, 0, 0, 0)" && v !== "transparent") c = v; }
-          bl.mabgk = c || "#F9CFD8"; bl.style.setProperty("--mabgk", bl.mabgk);
-        }
+        var c = PANEL || mabBg(bl, DEFAULT, PAGE);
+        if (bl.style.getPropertyValue("--mabgk") !== c) bl.style.setProperty("--mabgk", c);
         if (!bl.classList.contains("mabgk")) bl.classList.add("mabgk");
+        mabEd(w, "Panel color = this block background color in Square (cream = default pistachio)");
       }
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
     var t; function q(){ t = mabQ(t, run); }
-    new MutationObserver(q).observe(D.body, { childList: true, subtree: true });
+    function bgChanged(m){ var x = m.target; if (!x.classList || !x.classList.contains("mabgk")) return false; var v = x.style.getPropertyValue("background-color"); if (v === x.mabBgV) return false; x.mabBgV = v; return true; }
+    new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { if (ms[i].type === "childList" || bgChanged(ms[i])) { q(); return; } } }).observe(D.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style"] });
     run(); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
 
@@ -1365,14 +1414,17 @@
 
   /* ---------- Custom Cakes: Prefer to talk ---------- */
   M.push(["talk", function(){
-    /* ===== EDIT HERE ===== */
+    /* ===== EDIT HERE =====
+       PANEL COLOR: Amy picks it herself in Square = the background color of the block.
+                    If the block is cream (or no color), DEFAULT is used. PANEL = force one color and ignore Square.
+       In the Square editor: a preview of the panel on top, the normal Square fields to edit below (dashed box). */
     var BLOCK = "vNsioa";
-    var PANEL = "#D5E6C8", PAGE = "#F7EFE6";
+    var PANEL = "", DEFAULT = "#D5E6C8", PAGE = "#F7EFE6";
     /* ===================== */
-    var D = document, B = "#" + BLOCK + " .w-block", G = B + " .w-grid";
+    var D = document, B = "#" + BLOCK + " .w-block", G = B + (MAB_ED ? " .w-grid.mabprev" : " .w-grid");
     var S =
       B + "{background:" + PAGE + "!important;padding-top:clamp(12px,2vw,24px)!important;padding-bottom:clamp(24px,4vw,48px)!important}" +
-      B + " .container{box-sizing:border-box!important;width:min(1240px,calc(100% - 2*clamp(16px,6vw,110px)))!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important;padding:clamp(24px,3.5vw,48px) clamp(22px,3.5vw,52px)!important;background:" + PANEL + "!important;border-radius:18px!important}" +
+      B + " .container{box-sizing:border-box!important;width:min(1240px,calc(100% - 2*clamp(16px,6vw,110px)))!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important;padding:clamp(24px,3.5vw,48px) clamp(22px,3.5vw,52px)!important;background:var(--mabtk," + DEFAULT + ")!important;border-radius:18px!important}" +
       G + "{display:grid!important;grid-template-columns:auto minmax(0,1fr)!important;column-gap:clamp(24px,4vw,56px)!important;row-gap:16px!important;align-items:start!important}" +
       G + ">.grid__item{margin:0!important;min-width:0;grid-column:2}" +
       G + ">.grid__item:first-child{grid-column:1;grid-row:1/span 3}" +
@@ -1382,13 +1434,28 @@
       G + " .button-wrapper{display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:flex-start!important;gap:14px 24px!important}" +
       G + " .button-wrapper>.w-wrapper{width:auto!important;margin:0!important}" +
       G + " .button-wrapper .w-button:not(.mf){width:auto!important}" +
+      (MAB_ED ? B + " .w-grid:not(.mabprev){background:rgba(255,255,255,.55);border-radius:12px;padding:44px 14px 14px!important}" : "") +
       "@media(max-width:767px){" +
         B + " .container{width:calc(100% - 32px)!important;padding:22px 20px!important}" +
         G + "{grid-template-columns:minmax(0,1fr)!important}" +
         G + ">.grid__item," + G + ">.grid__item:first-child{grid-column:1;grid-row:auto}" +
         G + " h1," + G + " h2," + G + " h3{white-space:normal}" +
       "}";
+    function run(){
+      var w = D.getElementById(BLOCK); if (!w) return;
+      var bl = w.querySelector(".w-block"); if (!bl) return;
+      var c = PANEL || mabBg(bl, DEFAULT, PAGE);
+      if (bl.style.getPropertyValue("--mabtk") !== c) bl.style.setProperty("--mabtk", c);
+      if (MAB_ED) {
+        mabEd(w, "Panel color = this block background color in Square (cream = default pistachio)");
+        var src = bl.querySelector(".w-grid:not(.mabprev)");
+        mabPrev(src, "Edit text, buttons and hours here. On the live site it looks like the preview above");
+      }
+    }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
+    var t; function q(){ t = mabQ(t, run); }
+    new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (x.closest && x.closest(".mabprev")) continue; if (ms[i].type === "childList" || ms[i].type === "characterData" || (ms[i].attributeName === "style" && x.id && x.closest("#" + BLOCK) && x.style.getPropertyValue("background-color") !== x.mabBgV && ((x.mabBgV = x.style.getPropertyValue("background-color")), true))) { q(); return; } } }).observe(D.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["style"] });
+    q(); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
 
   /* ---------- Form: Weddings ---------- */
@@ -1583,41 +1650,53 @@
   /* ---------- About: big list ---------- */
   M.push(["biglist", function(){
     /* ===== EDIT HERE =====
-       BLOCKS: id of the Square block(s) (element with class w-block-wrapper). */
+       BLOCKS: id of the Square block(s) (element with class w-block-wrapper).
+       Rows: add, remove or reorder them in the Square block itself, any number. New rows get the same look.
+       In the Square editor: a preview of the list on top, the normal Square rows to edit below (dashed box). */
     var BLOCKS = ["BywFzU"];
     var LINE = "rgba(155,27,69,.35)";
     var HOVER = ["#F9CFD8", "#D5E6C8"];       /* row colors on hover, used in turn */
     var NOTES_ON_PHONE = false;                /* true = keep the small note on phones too */
     /* ===================== */
     var D = document;
+    var GR = MAB_ED ? " .w-grid.mabprev" : " .w-grid";    /* in the editor only the preview gets the list design */
     function each(rule){ return BLOCKS.map(function(id){ return "#" + id + " .w-block" + rule; }).join(","); }
-    var ROW = " .grid__item>.w-wrapper>.w-cell";
+    var IT = GR + ">.grid__item", ROW = ">.w-wrapper>.w-cell";
     var S =
       /* use the full content width instead of the narrow middle column */
       each(" .container .w-cell.col-md-8") + "{flex:0 0 100%!important;max-width:100%!important;margin-left:0!important}" +
       each(" .container") + "{box-sizing:border-box!important;width:min(1240px,calc(100% - 2*clamp(16px,6vw,110px)))!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important;padding-left:0!important;padding-right:0!important}" +
       /* list */
-      each(" .w-grid") + "{display:block!important;border-top:1px solid " + LINE + ";margin-top:6px}" +
-      each(" .grid__item") + "{margin:0!important;padding:0!important;border-bottom:1px solid " + LINE + "}" +
-      each(ROW) + "{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:16px;padding:16px 0!important;margin:0!important;transition:padding .3s ease,background .3s ease}" +
-      each(ROW + ">.w-cell") + "{margin:0!important;padding:0!important;width:auto!important;max-width:none!important;flex:0 1 auto!important;min-width:0}" +
-      each(ROW + ">.w-cell:first-child") + "{flex:1 1 auto!important}" +
-      each(" .grid__item") + "{transition:background-color .3s ease!important}" +
-      each(" .grid__item:nth-child(odd):hover") + "{background-color:" + HOVER[0] + "!important}" +
-      each(" .grid__item:nth-child(even):hover") + "{background-color:" + HOVER[1] + "!important}" +
-      each(" .grid__item:hover" + ROW.slice(11)) + "{padding-left:16px!important;padding-right:12px!important}" +
+      each(GR) + "{display:block!important;border-top:1px solid " + LINE + ";margin-top:6px}" +
+      each(IT) + "{margin:0!important;padding:0!important;border-bottom:1px solid " + LINE + ";transition:background-color .3s ease!important}" +
+      each(IT + ROW) + "{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;align-items:center!important;justify-content:space-between!important;gap:16px;padding:16px 0!important;margin:0!important;transition:padding .3s ease,background .3s ease}" +
+      each(IT + ROW + ">.w-cell") + "{margin:0!important;padding:0!important;width:auto!important;max-width:none!important;flex:0 1 auto!important;min-width:0}" +
+      each(IT + ROW + ">.w-cell:first-child") + "{flex:1 1 auto!important}" +
+      each(IT + ":nth-child(odd):hover") + "{background-color:" + HOVER[0] + "!important}" +
+      each(IT + ":nth-child(even):hover") + "{background-color:" + HOVER[1] + "!important}" +
+      each(IT + ":hover" + ROW) + "{padding-left:16px!important;padding-right:12px!important}" +
       /* big word */
-      each(" .grid__item h1") + "," + each(" .grid__item h2") + "," + each(" .grid__item h3") + "," + each(" .grid__item h4") + "{font-size:clamp(1.7rem,4.6vw,3.8rem)!important;line-height:1!important;letter-spacing:-.035em!important;margin:0!important;text-align:left!important}" +
+      each(IT + " h1") + "," + each(IT + " h2") + "," + each(IT + " h3") + "," + each(IT + " h4") + "{font-size:clamp(1.7rem,4.6vw,3.8rem)!important;line-height:1!important;letter-spacing:-.035em!important;margin:0!important;text-align:left!important}" +
       /* small note on the right */
-      each(ROW + ">.w-cell:last-child p") + "{font-size:.74rem!important;line-height:1.2!important;letter-spacing:.14em!important;text-align:right!important;white-space:nowrap;margin:0!important}" +
+      each(IT + ROW + ">.w-cell:last-child p") + "{font-size:.74rem!important;line-height:1.2!important;letter-spacing:.14em!important;text-align:right!important;white-space:nowrap;margin:0!important}" +
       "@media(max-width:767px){" +
         each(" .container") + "{width:calc(100% - 32px)!important}" +
-        each(ROW) + "{padding:12px 0!important}" +
-        each(" .grid__item:hover" + ROW.slice(11)) + "{padding-left:0!important;padding-right:0!important}" +
-        each(" .grid__item:hover") + "{background-color:transparent!important}" +
-        (NOTES_ON_PHONE ? each(ROW + ">.w-cell:last-child p") + "{font-size:.62rem!important;white-space:normal}" : each(ROW + ">.w-cell:last-child") + "{display:none!important}") +
+        each(IT + ROW) + "{padding:12px 0!important}" +
+        each(IT + ":hover" + ROW) + "{padding-left:0!important;padding-right:0!important}" +
+        each(IT + ":hover") + "{background-color:transparent!important}" +
+        (NOTES_ON_PHONE ? each(IT + ROW + ">.w-cell:last-child p") + "{font-size:.62rem!important;white-space:normal}" : each(IT + ROW + ">.w-cell:last-child") + "{display:none!important}") +
       "}";
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
+    if (!MAB_ED) return;
+    function run(){
+      for (var b = 0; b < BLOCKS.length; b++){
+        var w = D.getElementById(BLOCKS[b]); if (!w) continue;
+        mabPrev(w.querySelector(".w-block .w-grid:not(.mabprev)"), "Edit the rows here. Add or remove rows in the block settings, new rows get the same look. Notes on the right are hidden on phones");
+      }
+    }
+    var t; function q(){ t = mabQ(t, run); }
+    new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (!(x.closest && x.closest(".mabprev"))) { q(); return; } } }).observe(D.body, { childList: true, subtree: true, characterData: true });
+    q(); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
 
   /* ---------- About: visit card + map ---------- */
@@ -1692,10 +1771,11 @@
   M.push(["faq", function(){
     /* ===== EDIT HERE =====
        TABS_BLOCK: id of the Square block with the topic names (element with class w-block-wrapper).
-       TOPICS: titles of the FAQ blocks, in the same order as the names in the tabs block.
-               Tab 1 opens the 1st topic, tab 2 the 2nd, and so on. */
+       Topics are found by ORDER, no list to keep here: tab 1 opens the 1st question block below the tabs,
+       tab 2 the 2nd, and so on. To add a topic in Square: add a tab name + a new Text block after the last topic.
+       Link to a topic: /faq#tab-name, e.g. /faq#visit-us.
+       In the Square editor all topics and all answers are shown, each in a dashed box with its tab name. */
     var TABS_BLOCK = "eSWupv";
-    var TOPICS = ["Ordering", "Cakes & treats", "Dietary needs", "Weddings & events", "Visit us"];
     var HL_BLOCK = "GNMbTH", HL_WORD = "questions";   /* page title block + word on a pink tag, like the other banners ("" = none) */
     var FIRST_OPEN = true;       /* first question of each topic is open */
     var ONE_OPEN = true;         /* opening a question closes the one that was open */
@@ -1740,20 +1820,20 @@
       ".mabfx .grid__item.mabfx-open>.w-wrapper>.w-cell>.w-cell.row:first-child:after{transform:rotate(45deg);background:" + INK + ";color:#fff}" +
       A + "{display:none!important;margin:0!important;padding:0 48px 22px 0!important}" +
       ".mabfx .grid__item.mabfx-open>.w-wrapper>.w-cell>.w-cell.row:nth-child(2){display:block!important;animation:mabfxIn .3s ease both}" +
+      ".mabfx.mabfx-all .grid__item>.w-wrapper>.w-cell>.w-cell.row:nth-child(2){display:block!important;animation:none}" +
       "@media(max-width:767px){" + A + "{padding-right:0!important}}" +
       "@media(prefers-reduced-motion:reduce){.mabfx-in,.mabfx .grid__item.mabfx-open>.w-wrapper>.w-cell>.w-cell.row:nth-child(2){animation:none}}";
 
     function tabs(){ var w = D.getElementById(TABS_BLOCK); return w ? w.querySelectorAll(".grid__item") : []; }
+    function tabName(t){ return (t.textContent || "").replace(/\s+/g, " ").trim(); }
     function panels(){
-      var out = [], blocks = D.querySelectorAll("[data-block-purpose]");
-      for (var t = 0; t < TOPICS.length; t++){
-        var want = norm(TOPICS[t]), found = null;
-        for (var b = 0; b < blocks.length && !found; b++){
-          var bw = blocks[b]; if (bw.id === TABS_BLOCK || !bw.querySelector(".grid__item")) continue;
-          var hs = bw.querySelectorAll("h1,h2,h3");
-          for (var h = 0; h < hs.length; h++) if (!hs[h].closest(".grid__item") && norm(hs[h].textContent) === want) { found = bw; break; }
-        }
-        out.push(found);
+      /* the question blocks that come after the tabs block, one per tab */
+      var out = [], tw = D.getElementById(TABS_BLOCK), n = tabs().length; if (!tw || !n) return out;
+      var blocks = D.querySelectorAll("main [data-block-purpose]"), after = false;
+      for (var b = 0; b < blocks.length && out.length < n; b++){
+        var bw = blocks[b];
+        if (bw === tw) { after = true; continue; }
+        if (after && bw.querySelector(".grid__item") && !bw.closest("[data-mabl]")) out.push(bw);
       }
       return out;
     }
@@ -1767,32 +1847,40 @@
         var sp = D.createElement("span"); sp.className = "mabfx-hl"; sp.textContent = x.nodeValue; x.parentNode.replaceChild(sp, x); return;
       }
     }
-    var tight = 0;
+    var tight = 0, hashDone = 0;
     function apply(anim){
       highlight();
       /* less empty space between the block above (page title) and the tabs */
       if (!tight) { var tw = D.getElementById(TABS_BLOCK), cell = tw && tw.closest(".w-cell"), prev = cell && cell.previousElementSibling, pb = prev && prev.querySelector(".w-block");
         if (pb) { tight = 1; pb.style.setProperty("padding-bottom", "clamp(12px,2.5vw,28px)", "important");
           var pcn = pb.querySelector(".container"); if (pcn) { pcn.style.setProperty("padding-bottom", "0px", "important"); pcn.style.setProperty("margin-bottom", "0px", "important"); } } }
-      var ps = panels();
+      var ps = panels(), ts = tabs();
+      if (!hashDone && ts.length) { hashDone = 1; var hs = (location.hash || "").slice(1); for (var j = 0; j < ts.length; j++) if (hs && hs === slug(tabName(ts[j]))) cur = j; }
       for (var i = 0; i < ps.length; i++){
         var p = ps[i]; if (!p) continue;
         if (!p.classList.contains("mabfx")) {
           p.classList.add("mabfx");
           var first = p.querySelector(".grid__item"); if (FIRST_OPEN && first) first.classList.add("mabfx-open");
         }
-        var off = i !== cur;
+        var off = !MAB_ED && i !== cur;
         if (p.classList.contains("mabfx-off") !== off) p.classList.toggle("mabfx-off", off);
-        if (!off && anim) { p.classList.remove("mabfx-in"); void p.offsetWidth; p.classList.add("mabfx-in"); }
+        if (!off && anim && !MAB_ED) { p.classList.remove("mabfx-in"); void p.offsetWidth; p.classList.add("mabfx-in"); }
+        if (MAB_ED) { if (!p.classList.contains("mabfx-all")) p.classList.add("mabfx-all");
+          mabEd(p, "Topic " + (i + 1) + " of " + ts.length + ": opens with the tab " + (ts[i] ? tabName(ts[i]) : "?") + ". All answers are open here, on the site they open on click"); }
       }
-      var ts = tabs();
+      if (MAB_ED) mabEd(D.getElementById(TABS_BLOCK), ps.length === ts.length ? "Tabs: one name per topic, in the same order as the topic blocks below" :
+        "Check: " + ts.length + " tabs but " + ps.length + " topic blocks. Each tab needs its own Text block below, in the same order");
       for (var k = 0; k < ts.length; k++){
         var on = k === cur; if (ts[k].classList.contains("mabfx-act") !== on) ts[k].classList.toggle("mabfx-act", on);
         if (ts[k].getAttribute("role") !== "tab") { ts[k].setAttribute("role", "tab"); ts[k].tabIndex = 0; }
         var sel = on ? "true" : "false"; if (ts[k].getAttribute("aria-selected") !== sel) ts[k].setAttribute("aria-selected", sel);
       }
     }
-    function go(i){ if (i < 0 || i >= TOPICS.length) return; cur = i; apply(true); try { history.replaceState(null, "", "#" + slug(TOPICS[i])); } catch (e) {} }
+    function go(i){
+      var ts = tabs(); if (i < 0 || i >= ts.length) return; cur = i; apply(true);
+      if (MAB_ED) { var p = panels()[i]; if (p && p.scrollIntoView) p.scrollIntoView({ behavior: "smooth", block: "start" }); return; }   /* editor: jump to that topic */
+      try { history.replaceState(null, "", "#" + slug(tabName(ts[i]))); } catch (e) {}
+    }
 
     D.addEventListener("click", function(e){
       var t = e.target.closest && e.target.closest("#" + TABS_BLOCK + " .grid__item");
@@ -1806,14 +1894,158 @@
       if (e.key !== "Enter" && e.key !== " ") return;
       var t = e.target.closest && e.target.closest("#" + TABS_BLOCK + " .grid__item"); if (t) { e.preventDefault(); go([].indexOf.call(tabs(), t)); }
     });
-    /* open a topic from the link, e.g. /faq#visit-us */
-    var hs = (location.hash || "").slice(1);
-    for (var j = 0; j < TOPICS.length; j++) if (hs && hs === slug(TOPICS[j])) cur = j;
+    /* a topic from the link, e.g. /faq#visit-us, is opened in apply() once the tabs are on the page */
 
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
     var tm; function q(){ tm = mabQ(tm, function(){ apply(false); }); }
     new MutationObserver(q).observe(D.body, { childList: true, subtree: true });
     q(); setTimeout(q, 1500); setTimeout(q, 4000);
+  }]);
+
+  /* ---------- Contact page text ---------- */
+  M.push(["contact", function(){
+    /* The photo, badge and pink tag come from "shero" (CFG line SmLbTp). This part tidies the text:
+       everything left aligned, the first line as a lead, and every EMPTY line in the Square text
+       becomes a thin raspberry divider, so each group (email, phone, visit) reads as its own row.
+       Only styles, nothing is moved, so editing the text in Square stays safe.
+       ===== EDIT HERE ===== */
+    var BLOCK = "SmLbTp";
+    var INK = "#9B1B45", LINE = "rgba(155,27,69,.35)";
+    /* ===================== */
+    var D = document, B = "#" + BLOCK + " .w-block", G = B + " .element-group";
+    var BODY = "\"Niramit Regular\",\"Niramit\",sans-serif", BOLD = "\"Niramit Bold\",\"Niramit\",sans-serif";
+    var T = G + " .text-component:not(:has(h1,h2,h3,h4,h5,h6))";   /* the text under the title */
+    var S =
+      G + " h1," + G + " h2," + G + " p," + G + " .text-component{text-align:left!important}" +
+      G + " .button-group{justify-content:flex-start!important}" +
+      T + "{margin-top:18px}" +
+      T + " p{margin:0!important;font-family:" + BODY + "!important;font-size:1.05rem!important;line-height:1.55!important;letter-spacing:0!important;color:" + INK + "!important}" +
+      T + " p strong{font-family:" + BOLD + "!important;font-weight:700!important}" +
+      T + " p a{color:" + INK + "!important;text-decoration:underline!important;text-underline-offset:3px;text-decoration-thickness:1px;overflow-wrap:anywhere}" +
+      /* first line: the lead */
+      T + " p:first-child{font-size:1.18rem!important;line-height:1.45!important;max-width:36ch;margin-bottom:18px!important}" +
+      T + " p:first-child strong{font-family:" + BODY + "!important;font-weight:400!important}" +
+      /* empty lines -> dividers, plus one line at the top and bottom of the list */
+      T + " p:has(>br:only-child){height:0!important;overflow:hidden!important;margin:14px 0!important;border-top:1px solid " + LINE + ";font-size:0!important;line-height:0!important}" +
+      T + " p:first-child+p:not(:has(>br:only-child)){border-top:1px solid " + LINE + ";padding-top:14px!important}" +
+      T + " p:last-child:not(:first-child){padding-bottom:14px!important;border-bottom:1px solid " + LINE + "}" +
+      T + " p:first-child+p:has(>br:only-child){margin-top:0!important}" +
+      "@media(max-width:767px){" + T + " p{font-size:1rem!important}" + T + " p:first-child{font-size:1.1rem!important}}";
+    var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
+  }]);
+
+  /* ---------- Mobile menu (all pages) ---------- */
+  M.push(["mnav", function(){
+    /* Square opens the phone menu as a slide-out panel (class "slideout") that sits BEFORE the page in the code,
+       so anything on the page with its own layer (badges, photos, the big header logo) could cover it.
+       This part lifts the menu above everything (the Square header itself is never touched)
+       and restyles it: logo on top, big raspberry links, our Sign In icon, social icons under the list.
+       ===== EDIT HERE ===== */
+    var INK = "#9B1B45", CREAM = "#F7EFE6", BLUSH = "#F9CFD8", LINE = "rgba(155,27,69,.35)";
+    var LOGO_W = 170;                              /* logo width in the menu, px */
+    var ALIGN = "left";                            /* menu links: "left" or "center" */
+    var SIGNIN_ICON = "ph ph-chef-hat";            /* Phosphor icon class for Sign In ("" = keep the Square icon) */
+    var SOCIAL = [                                 /* [Phosphor icon class, link, name]; [] = no social row */
+      ["ph ph-facebook-logo", "https://www.facebook.com/missamysbakery/", "Facebook"],
+      ["ph ph-instagram-logo", "https://www.instagram.com/missamysbakery/", "Instagram"]
+    ];
+    var PHOSPHOR = "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.1/src/regular/style.css";   /* loaded only if the page has no Phosphor yet */
+    /* ===================== */
+    var D = document, TOP = 2147483000;
+    var DISP = "\"Bricolage Grotesque\",\"Bricolage Grotesque 24pt SemiCondensed Regular\",\"Arial Black\",sans-serif";
+    var BOLD = "\"Niramit Bold\",\"Niramit\",sans-serif";
+    var N = ".nav-mobile.w-block", L = N + " .nav--mobile .nav__main";
+    var S =
+      /* above everything on every page */
+      ".slideout{z-index:" + TOP + "!important}" +
+      ".slideout__overlay{z-index:" + TOP + "!important}" +
+      ".slideout__content{z-index:" + (TOP + 1) + "!important}" +
+      N + "{background:" + CREAM + "!important;color:" + INK + "}" +
+      /* top row: logo left, close button right */
+      N + ">.container{padding-top:14px!important;padding-bottom:10px!important}" +
+      N + ">.container>.w-container{align-items:center!important}" +
+      N + ">.container .w-cell{margin-top:0!important;margin-bottom:0!important}" +
+      N + ">.container .w-cell.cell--empty{display:flex!important;align-items:center;justify-content:flex-start}" +
+      ".mabmn-logo{display:block;line-height:0;-webkit-tap-highlight-color:transparent}" +
+      ".mabmn-logo img{display:block;width:" + LOGO_W + "px;max-width:100%;height:auto}" +
+      N + " .nav-icon__close{display:flex;justify-content:flex-end}" +
+      N + " .nav-icon__close .nav-btn{width:44px;height:44px;padding:0!important;display:grid!important;place-items:center;border:1.5px solid " + INK + "!important;border-radius:50%!important;background:transparent!important;transition:background .2s ease}" +
+      N + " .nav-icon__close .nav-btn:active{background:" + BLUSH + "!important}" +
+      N + " .nav-icon__close .icon{--color:" + INK + "!important;color:" + INK + "!important}" +
+      /* the list */
+      N + " .nav-scroll{padding:6px 20px 0!important;box-sizing:border-box}" +
+      L + "{margin:0!important;padding:0!important;text-align:" + ALIGN + "!important;border-top:1px solid " + LINE + "}" +
+      L + ">.nav__item{margin:0!important;padding:0!important;border-bottom:1px solid " + LINE + ";text-align:" + ALIGN + "!important}" +
+      L + ">.nav__item>a," + N + " .subnav__nested .parent-link{display:inline-block!important;padding:14px 0!important;margin:0!important;font-family:" + DISP + "!important;font-weight:800!important;font-size:clamp(1.65rem,7.6vw,2.2rem)!important;line-height:1!important;letter-spacing:-.03em!important;text-transform:uppercase!important;color:" + INK + "!important;text-decoration:none!important;-webkit-tap-highlight-color:transparent}" +
+      /* the page you are on: pink band behind the word, like the pink tags in the banners */
+      L + " a.router-link-exact-active{background:linear-gradient(" + BLUSH + "," + BLUSH + ") 0 58%/100% .9em no-repeat!important}" +
+      /* About + its submenu */
+      N + " .subnav__nested .parent-link-wrapper{display:flex!important;align-items:center!important;justify-content:" + (ALIGN === "center" ? "center" : "space-between") + "!important;gap:14px}" +
+      N + " .subnav__nested .subnav-icon{display:grid!important;place-items:center;width:32px;height:32px;border:1.5px solid " + INK + ";border-radius:50%;color:" + INK + "!important;flex:none}" +
+      N + " .subnav__nested .subnav-icon .icon{--color:" + INK + "!important;--icon-size:14px!important;color:" + INK + "!important}" +
+      N + " .subnav__nested .nested-menu{margin:0!important;padding:0 0 12px!important;text-align:" + ALIGN + "!important}" +
+      N + " .subnav__nested .nested-menu .nav__item{margin:0!important;padding:0!important;border:0!important}" +
+      N + " .subnav__nested .nested-menu a{display:inline-block!important;padding:8px 0!important;font:700 .82rem/1.2 " + BOLD + "!important;letter-spacing:.14em!important;text-transform:uppercase!important;color:" + INK + "!important;text-decoration:none!important}" +
+      /* Sign In */
+      L + ">.nav__item.mabmn-si{border-bottom:0!important}" +
+      N + " .sign-in-link{text-align:" + ALIGN + "!important}" +
+      N + " .sign-in-link button{--color:" + INK + "!important;color:" + INK + "!important;padding:18px 0 8px!important;margin:0!important;background:none!important;border:0!important}" +
+      N + " .sign-in-link button>span{display:inline-flex!important;align-items:center!important;gap:10px!important;font:700 .85rem/1 " + BOLD + "!important;letter-spacing:.14em!important;text-transform:uppercase!important;color:" + INK + "!important}" +
+      (SIGNIN_ICON ? N + " .sign-in-link .icon{display:none!important}" : N + " .sign-in-link .icon{--color:" + INK + "!important}") +
+      ".mabmn-ic{font-size:24px;line-height:1;color:" + INK + "}" +
+      /* social row */
+      ".mabmn-soc{display:flex;gap:10px;justify-content:" + (ALIGN === "center" ? "center" : "flex-start") + ";padding:14px 0 32px}" +
+      ".mabmn-soc a{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:" + INK + ";color:#fff!important;text-decoration:none!important;transition:transform .2s ease}" +
+      ".mabmn-soc a:active{transform:scale(.92)}" +
+      ".mabmn-soc i{font-size:22px;line-height:1}";
+    function phosphor(){
+      if (!PHOSPHOR || (!SIGNIN_ICON && !SOCIAL.length)) return;
+      var ls = D.querySelectorAll("link[href*=phosphor],script[src*=phosphor]"); if (ls.length) return;
+      var l = D.createElement("link"); l.rel = "stylesheet"; l.href = PHOSPHOR; D.head.appendChild(l);
+    }
+    function logoSrc(){
+      var im = D.querySelector("[data-block-purpose=header] .w-sitelogo img") || D.querySelector(".w-sitelogo img");
+      return im ? (im.currentSrc || im.getAttribute("src") || "") : "";
+    }
+    function run(){
+      var ms = D.querySelectorAll(N);
+      for (var i = 0; i < ms.length; i++){
+        var m = ms[i];
+        /* logo in the empty top cell */
+        var cell = m.querySelector(":scope>.container .w-cell.cell--empty");
+        if (cell && !cell.querySelector(".mabmn-logo")) {
+          var src = logoSrc();
+          if (src) {
+            var a = D.createElement("a"); a.className = "mabmn-logo"; a.href = "/"; a.setAttribute("aria-label", "Home");
+            var im = D.createElement("img"); im.src = src; im.alt = "Miss Amy\u2019s Bakery"; a.appendChild(im); cell.appendChild(a);
+          }
+        }
+        /* Sign In: our icon */
+        var si = m.querySelector(".sign-in-link");
+        if (si) {
+          var li = si.closest(".nav__item"); if (li && !li.classList.contains("mabmn-si")) li.classList.add("mabmn-si");
+          var inner = si.querySelector("button>span");
+          if (SIGNIN_ICON && inner && !inner.querySelector(".mabmn-ic")) {
+            var ic = D.createElement("i"); ic.className = SIGNIN_ICON + " mabmn-ic"; ic.setAttribute("aria-hidden", "true"); inner.insertBefore(ic, inner.firstChild);
+          }
+        }
+        /* social icons under the list */
+        var sc = m.querySelector(".nav-scroll");
+        if (SOCIAL.length && sc && !sc.querySelector(".mabmn-soc")) {
+          var row = D.createElement("div"); row.className = "mabmn-soc";
+          SOCIAL.forEach(function(s){
+            var l = D.createElement("a"); l.href = s[1]; l.target = "_blank"; l.rel = "noopener"; l.setAttribute("aria-label", s[2]);
+            var x = D.createElement("i"); x.className = s[0]; x.setAttribute("aria-hidden", "true"); l.appendChild(x); row.appendChild(l);
+          });
+          sc.appendChild(row);
+        }
+      }
+    }
+    var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
+    phosphor();
+    var t; function q(){ t = mabQ(t, run); }
+    new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var x = ms[i].target; if (!(x.closest && x.closest(".mabmn-logo,.mabmn-soc,.mabmn-ic"))) { q(); return; } } }).observe(D.body, { childList: true, subtree: true });
+    q(); setTimeout(q, 1500);
   }]);
 
   /* ---------- Footer ---------- */
