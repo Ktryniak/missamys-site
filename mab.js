@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v1.8
+   Miss Amy's Bakery - site helpers (mab.js) v2.1
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -9,7 +9,7 @@
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "1.8";
+  window.MAB = "2.1";
   var M = [];
   /* run a part in the next frame, before the browser paints (no flash of the old design) */
   function mabQ(id, f){ if (id) cancelAnimationFrame(id); return requestAnimationFrame(function(){ try { f(); } catch (e) {} }); }
@@ -26,11 +26,11 @@
   /* ---------- Hide the loader Embed + menu above badges ---------- */
   M.push(["embedfix", function(){
     /* Hides the Embed block that loads this file (mab-loader-embed), with all the space around it,
-       and keeps the sticky menu above the spinning badges when the page scrolls. */
+       and keeps the spinning badges from covering the menu (without touching the Square header itself). */
     var D = document;
     var S =
       "[data-mabl]{height:0!important;min-height:0!important;max-height:0!important;margin:0!important;padding:0!important;border:0!important;overflow:hidden!important}" +
-      "[data-block-purpose^=header],.w-header,header{z-index:40!important}";
+      ".mabh-art,.mabsh-art,.mabwh-art{isolation:isolate}";   /* badges stay inside their photo, never above the menu */
     function isLoader(f){
       try {
         if ((f.getAttribute("srcdoc") || "").indexOf("mab-js") > -1) return 1;
@@ -58,6 +58,51 @@
     var t; function q(){ t = mabQ(t, run); }
     new MutationObserver(q).observe(D.documentElement, { childList: true, subtree: true });
     addEventListener("load", q); q(); setTimeout(q, 1000); setTimeout(q, 2500); setTimeout(q, 5000);
+  }]);
+
+  /* ---------- Phones: button + arrow link side by side ---------- */
+  M.push(["btnfit", function(){
+    /* Phones: a filled button + an arrow link (CALL US, WEDDING GALLERY ...) stay side by side.
+       The text gets a little smaller until both fit in one row (never below MIN px); if they still do not fit, they stack. */
+    var MIN = 11, MAX = 15, GAP = 12;
+    var D = document, done = [];
+    var st = D.createElement("style");
+    st.textContent = "@media(max-width:767px){body{overflow-x:clip}}";
+    D.head.appendChild(st);
+    function set(el, k, v){ el.style.setProperty(k, v, "important"); done.push([el, k]); }
+    function reset(){ done.forEach(function(x){ x[0].style.removeProperty(x[1]); }); done = []; }
+    function texts(g){ return g.querySelectorAll(".w-button p, .w-button>span:not(.bb), .w-button>span *, a.mf *, .mab-arrowbtn *"); }
+    function fit(){
+      reset();
+      if (innerWidth >= 768) return;
+      var gs = D.querySelectorAll(".button-group");
+      for (var i = 0; i < gs.length; i++){
+        var g = gs[i]; if (g.closest("header,nav,footer,form")) continue;
+        if (!g.querySelector("a.mf,.mab-arrowbtn")) continue;
+        var ws = [].filter.call(g.children, function(c){ return c.offsetParent !== null || c.getClientRects().length; });
+        if (ws.length !== 2) continue;
+        set(g, "flex-wrap", "nowrap"); set(g, "flex-direction", "row"); set(g, "align-items", "center"); set(g, "justify-content", "flex-start"); set(g, "gap", GAP + "px");
+        ws.forEach(function(w){ set(w, "flex", "0 0 auto"); set(w, "width", "auto"); set(w, "min-width", "0"); set(w, "margin", "0"); });
+        var fb = g.querySelector(".w-button:not(.mf):not(.mab-arrowbtn)");
+        if (fb) { set(fb, "width", "auto"); set(fb, "min-width", "0"); set(fb, "padding-left", "14px"); set(fb, "padding-right", "14px"); set(fb, "white-space", "nowrap"); }
+        var tx = texts(g), gl = g.getBoundingClientRect().left, avail = Math.min(g.parentElement ? g.parentElement.clientWidth : innerWidth, D.documentElement.clientWidth - Math.max(gl, 0) - 16);
+        function used(){ return ws[0].getBoundingClientRect().width + ws[1].getBoundingClientRect().width + GAP; }
+        var fs = MAX;
+        for (; fs >= MIN; fs -= .5){
+          for (var k = 0; k < tx.length; k++) set(tx[k], "font-size", fs + "px");
+          if (used() <= avail) break;
+        }
+        if (fs < MIN) {   /* does not fit even small: stack them, normal size */
+          for (var k2 = 0; k2 < tx.length; k2++) tx[k2].style.removeProperty("font-size");
+          set(g, "flex-wrap", "wrap"); set(g, "row-gap", "14px");
+        }
+      }
+    }
+    var t; function q(){ clearTimeout(t); t = setTimeout(fit, 120); }
+    new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { if (ms[i].type === "childList") { q(); return; } } }).observe(D.body, { childList: true, subtree: true });
+    addEventListener("resize", q); addEventListener("load", q);
+    if (D.fonts && D.fonts.ready) D.fonts.ready.then(q);
+    q(); setTimeout(q, 1500); setTimeout(q, 4000);
   }]);
 
   /* ---------- Home banner ---------- */
@@ -272,7 +317,7 @@
     }
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
     var t; function q(){ t = mabQ(t, run); } try { run(); } catch (e) {}
-    new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var t2 = ms[i].target; if (!(t2.closest && t2.closest(".fcl-row,.fcl-peek"))) { q(); return; } } }).observe(D.documentElement, { childList: true, subtree: true }); addEventListener("load", q); setTimeout(q, 1500); setTimeout(q, 4000); setTimeout(q, 8000);
+    new MutationObserver(function(ms){ for (var i = 0; i < ms.length; i++) { var t2 = ms[i].target; if (!(t2.closest && t2.closest(".fcl-row,.fcl-peek"))) { q(); return; } } }).observe(D.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["src", "srcset", "data-src"] }); addEventListener("load", q); D.addEventListener("load", function(e){ if (e.target.closest && e.target.closest(".featured-category__image")) q(); }, true); setTimeout(q, 1500); setTimeout(q, 4000); setTimeout(q, 8000);
   }]);
 
   /* ---------- Home featured products ---------- */
@@ -372,6 +417,7 @@
       T + " .featured-event__date-time{display:flex!important;flex-wrap:wrap;gap:4px 12px;justify-content:flex-start!important;margin:0 0 14px!important}" +
       T + " .featured-event__date," + T + " .featured-event__time{font-family:\"Niramit Bold\",\"Niramit\",sans-serif!important;font-weight:700!important;font-size:.8rem!important;line-height:1.2!important;letter-spacing:.16em!important;text-transform:uppercase!important;color:" + ACCENT + "!important;background:none!important;padding:0!important;margin:0!important;border:0!important}" +
       T + " .featured-event__title{margin:0!important;padding:0!important}" +
+      T + " .featured-event__title," + T + " .featured-event__title h4{display:block!important;-webkit-line-clamp:unset!important;line-clamp:none!important;max-height:none!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important}" +
       T + " .featured-event__title h4{font-family:\"Bricolage Grotesque\",\"Bricolage Grotesque 24pt SemiCondensed Regular\",\"Arial Black\",sans-serif!important;font-weight:800!important;font-size:clamp(2rem,3.4vw,3rem)!important;line-height:.98!important;letter-spacing:-.035em!important;color:" + INK + "!important;margin:0!important;text-align:left!important}" +
       T + " .featured-event__details>.text-component:last-child{margin:14px 0 0!important;font-family:\"Niramit Regular\",\"Niramit\",sans-serif!important;font-size:1.05rem!important;line-height:1.5!important;color:" + INK + "!important;text-align:left!important}" +
       T + " .featured-event__details>.text-component:last-child:empty{display:none!important}" +
@@ -905,10 +951,10 @@
       "@media(max-width:767px){" +
         ".mabwh .mabwh-art .figure__aspect-ratio{height:" + PHOTO_H_MOBILE + "!important;border-radius:14px!important}" +
         ".mabwh .mabwh-bd{transform:rotate(-8deg) scale(.62);transform-origin:left bottom;right:auto;left:10px;top:auto;bottom:10px}" +
-        ".mabwh .button-group{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:10px!important}" +
-        ".mabwh .button-group .button-wrapper{flex:1 1 0!important;min-width:0!important;margin:0!important;width:auto!important}" +
-        ".mabwh .button-group .w-button{width:100%!important;min-width:0!important;padding-left:10px!important;padding-right:10px!important}" +
-        ".mabwh .button-group .w-button p{font-size:14px!important;white-space:nowrap}" +
+        ".mabwh .button-group{display:flex!important;flex-direction:row!important;flex-wrap:nowrap!important;gap:12px!important;justify-content:flex-start!important}" +
+        ".mabwh .button-group .button-wrapper{flex:0 0 auto!important;min-width:0!important;margin:0!important;width:auto!important}" +
+        ".mabwh .button-group .w-button:not(.mf){width:auto!important;min-width:0!important;padding-left:14px!important;padding-right:14px!important}" +
+        ".mabwh .button-group .w-button p{white-space:nowrap}" +
       "}" +
       "@media(prefers-reduced-motion:reduce){.mabwh .mabwh-bd,.mabwh .mabwh-ring{animation:none}}";
     var tries = 0;
