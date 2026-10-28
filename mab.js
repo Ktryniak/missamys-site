@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v1.7
+   Miss Amy's Bakery - site helpers (mab.js) v1.9
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -349,28 +349,37 @@
     var S =
       ".mabtx .w-grid{flex:1 1 100%!important;width:100%!important;max-width:100%!important;box-sizing:border-box;display:grid!important;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr))!important;gap:28px!important;align-items:stretch!important}" +
       ".mabtx .grid__item,.mabtx .grid__item>.w-wrapper{display:flex!important;min-width:0;width:100%!important;max-width:none!important}" +
-      T + "{position:relative!important;display:grid!important;grid-template-columns:var(--ph) minmax(0,1fr) var(--stub)!important;grid-template-rows:1fr auto!important;width:100%!important;min-height:230px;box-sizing:border-box!important;padding:0!important;margin:0!important;border:0!important;border-radius:4px!important;box-shadow:none!important;opacity:1!important;text-align:left!important;cursor:pointer;" +
-        "background:radial-gradient(circle at calc(100% - var(--stub)) 0,var(--sec) 11px,transparent 11.5px),radial-gradient(circle at calc(100% - var(--stub)) 100%,var(--sec) 11px,transparent 11.5px),var(--tk)!important}" +
+      T + "{position:relative!important;display:grid!important;grid-template-columns:var(--ls,0px) var(--ph) minmax(0,1fr) var(--stub)!important;grid-template-rows:1fr auto!important;width:100%!important;min-height:230px;box-sizing:border-box!important;padding:0!important;margin:0!important;border:0!important;border-radius:4px!important;box-shadow:none!important;opacity:1!important;text-align:left!important;cursor:pointer;" +
+        "background:radial-gradient(circle at calc(100% - var(--stub)) 0,var(--sec) 11px,transparent 11.5px),radial-gradient(circle at calc(100% - var(--stub)) 100%,var(--sec) 11px,transparent 11.5px),radial-gradient(circle at var(--lsn,-30px) 0,var(--sec) 11px,transparent 11.5px),radial-gradient(circle at var(--lsn,-30px) 100%,var(--sec) 11px,transparent 11.5px),var(--tk)!important}" +
       T + ":hover{opacity:1!important}" +
       T + " .hover-fade-80," + T + ".hover-fade-80:hover{opacity:1!important}" +
       T + ":before{content:\"\";position:absolute;top:16px;bottom:16px;right:var(--stub);border-left:2px dashed " + INK + "55}" +
       T + ":after{content:attr(data-stub);position:absolute;top:0;bottom:0;right:0;width:var(--stub);display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;transform:rotate(180deg);font:700 .78rem/1 \"Niramit Bold\",\"Niramit\",sans-serif;letter-spacing:.2em;text-transform:uppercase;color:" + ACCENT + ";white-space:nowrap;overflow:hidden}" +
-      T + ">.w-wrapper:first-child{grid-column:1;grid-row:1/3;display:var(--phd)!important;position:relative!important;padding:0!important;margin:0!important;min-height:100%}" +
-      T + ">.w-wrapper:first-child figure{position:absolute!important;inset:16px 0 16px 16px;margin:0!important;border-radius:10px;overflow:hidden}" +
-      T + ">.w-wrapper:first-child figure *{position:absolute!important;inset:0;width:100%!important;height:100%!important;padding:0!important;aspect-ratio:auto!important}" +
+      /* event photo: a square on the left */
+      T + ">.w-wrapper:first-child{grid-column:2;grid-row:1/3;display:var(--phd)!important;align-self:stretch;padding:0!important;margin:0!important;min-width:0}" +
+      T + ">.w-wrapper:first-child>div,"+ T + ">.w-wrapper:first-child>div>div," + T + ">.w-wrapper:first-child .product-image__link-wrapper{height:100%!important}" +
+      T + ">.w-wrapper:first-child .figure__aspect-ratio{position:relative!important;display:block!important;width:100%!important;height:100%!important;min-height:var(--phs,0px);aspect-ratio:auto!important;padding:0!important;margin:0!important;border-radius:0!important;overflow:hidden!important}" +
+      T + "{min-height:var(--phs,0px)}" +
+      /* left stub (desktop with photo) */
+      T + ">.mabtx-ls{grid-column:1;grid-row:1/3;position:relative;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;transform:rotate(180deg);font:700 .78rem/1 \"Niramit Bold\",\"Niramit\",sans-serif;letter-spacing:.2em;text-transform:uppercase;color:" + ACCENT + ";white-space:nowrap;overflow:hidden}" +
+      T + ">.mabtx-ls:after{content:\"\";position:absolute;top:16px;bottom:16px;left:0;border-left:2px dashed " + INK + "55}" +
+      T + ">.w-wrapper:first-child .figure__image," + T + ">.w-wrapper:first-child .figure__image>div," + T + ">.w-wrapper:first-child img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;max-height:none!important;margin:0!important}" +
       T + ">.w-wrapper:first-child img{object-fit:cover!important}" +
-      T + " .featured-event__details{grid-column:2;grid-row:1;display:block!important;padding:clamp(28px,3.5vw,44px) clamp(24px,3.5vw,48px) 0!important;margin:0!important;text-align:left!important}" +
+      T + ">.w-wrapper:first-child .product-image__link-wrapper{display:block!important}" +
+      /* same width as the other blocks on the page */
+      ".mabtx>.container{box-sizing:border-box!important;width:min(1240px,calc(100% - 2*clamp(16px,6vw,110px)))!important;max-width:none!important;margin-left:auto!important;margin-right:auto!important;padding-left:0!important;padding-right:0!important}" +
+      T + " .featured-event__details{grid-column:3;grid-row:1;display:block!important;padding:clamp(28px,3.5vw,44px) clamp(24px,3.5vw,48px) 0!important;margin:0!important;text-align:left!important}" +
       T + " .featured-event__date-time{display:flex!important;flex-wrap:wrap;gap:4px 12px;justify-content:flex-start!important;margin:0 0 14px!important}" +
       T + " .featured-event__date," + T + " .featured-event__time{font-family:\"Niramit Bold\",\"Niramit\",sans-serif!important;font-weight:700!important;font-size:.8rem!important;line-height:1.2!important;letter-spacing:.16em!important;text-transform:uppercase!important;color:" + ACCENT + "!important;background:none!important;padding:0!important;margin:0!important;border:0!important}" +
       T + " .featured-event__title{margin:0!important;padding:0!important}" +
       T + " .featured-event__title h4{font-family:\"Bricolage Grotesque\",\"Bricolage Grotesque 24pt SemiCondensed Regular\",\"Arial Black\",sans-serif!important;font-weight:800!important;font-size:clamp(2rem,3.4vw,3rem)!important;line-height:.98!important;letter-spacing:-.035em!important;color:" + INK + "!important;margin:0!important;text-align:left!important}" +
       T + " .featured-event__details>.text-component:last-child{margin:14px 0 0!important;font-family:\"Niramit Regular\",\"Niramit\",sans-serif!important;font-size:1.05rem!important;line-height:1.5!important;color:" + INK + "!important;text-align:left!important}" +
       T + " .featured-event__details>.text-component:last-child:empty{display:none!important}" +
-      T + " .featured-event__button-wrapper{grid-column:2;grid-row:2;padding:26px clamp(24px,3.5vw,48px) clamp(28px,3.5vw,44px)!important;margin:0!important;display:flex!important;justify-content:flex-start!important}" +
+      T + " .featured-event__button-wrapper{grid-column:3;grid-row:2;padding:26px clamp(24px,3.5vw,48px) clamp(28px,3.5vw,44px)!important;margin:0!important;display:flex!important;justify-content:flex-start!important}" +
       T + " .mabtx-desc{margin:14px 0 0!important;padding:0!important;font-family:\"Niramit Regular\",\"Niramit\",sans-serif!important;font-size:1.05rem!important;line-height:1.5!important;color:" + INK + "!important;text-align:left!important;max-width:46ch}" +
       ".mabtx-hidden{display:none!important}" +
       ".mabtx .w-grid.mabtx-one{grid-template-columns:minmax(0,1fr)!important}" +
-      "@media(min-width:768px){.mabtx .mabtx-one " + T.slice(7) + "{min-height:320px}}" +
+      
       T + "{border:1px solid rgba(155,27,69,.35)!important;border-radius:14px!important}" +
       T + " .featured-event__button-wrapper .w-button{width:auto!important}" +
       ".mabtx-dots{display:none}" +
@@ -418,12 +427,13 @@
     }
     function desc(url, done){
       if (cache[url] !== undefined) { done(cache[url]); return; }
-      if (busy[url]) return; busy[url] = 1;
+      if (busy[url] && Date.now() - busy[url] < 60000) return; busy[url] = Date.now();   /* empty or failed: try again after a minute */
       fetch(url, { credentials: "same-origin" }).then(function(r){ return r.ok ? r.text() : ""; }).then(function(html){
         var d = new DOMParser().parseFromString(html, "text/html"), m = d.querySelector("meta[name=description]") || d.querySelector("meta[property='og:description']");
-        cache[url] = cut(m ? m.getAttribute("content") : ""); try { sessionStorage.setItem("mabtx", JSON.stringify(cache)); } catch (e) {}
-        done(cache[url]);
-      }).catch(function(){ cache[url] = ""; });
+        var txt = cut(m ? m.getAttribute("content") : "");
+        if (txt) { cache[url] = txt; try { sessionStorage.setItem("mabtx", JSON.stringify(cache)); } catch (e) {} }
+        done(txt);
+      }).catch(function(){});
     }
     function slider(bl, grid, n){
       var many = SLIDER && n > 1; grid.classList.toggle("mabtx-many", many);
@@ -472,8 +482,16 @@
           s.setProperty("--stub", innerWidth < 600 ? "48px" : "66px");
           var ph = PHOTO === true || (PHOTO === "desktop" && innerWidth >= 768);
           if (ph && !c.querySelector(".w-wrapper:first-child img")) ph = false;      /* no photo in Square: no empty space */
-          s.setProperty("--ph", ph ? (shown === 1 ? "minmax(0,.8fr)" : (innerWidth < 600 ? "96px" : "190px")) : "0px");
+          var sz = shown === 1 ? "clamp(260px,28vw,360px)" : "210px";
+          s.setProperty("--ph", ph ? sz : "0px");
+          s.setProperty("--phs", ph ? sz : "0px");
           s.setProperty("--phd", ph ? "block" : "none");
+          s.setProperty("--ls", ph ? (innerWidth < 600 ? "48px" : "66px") : "0px");
+          s.setProperty("--lsn", ph ? (innerWidth < 600 ? "48px" : "66px") : "-30px");
+          var lsd = c.querySelector(":scope>.mabtx-ls"), dd = c.querySelector(".featured-event__date");
+          if (ph) { if (!lsd) { lsd = D.createElement("div"); lsd.className = "mabtx-ls"; lsd.setAttribute("aria-hidden", "true"); c.appendChild(lsd); }
+            var lt = STUB === "date" ? (dd ? dd.textContent.trim() : "") : STUB; if (lsd.textContent !== lt) lsd.textContent = lt; }
+          else if (lsd) lsd.remove();
           var h = c.querySelector(".featured-event__title h4"), tl = h ? h.textContent.trim().toLowerCase() : "", dsc = c.querySelector(".mabtx-desc");
           var put = function(card, hh, txt){ var ds = card.querySelector(".mabtx-desc");
             if (txt) { if (!ds) { ds = D.createElement("p"); ds.className = "mabtx-desc"; hh.closest(".featured-event__title").insertAdjacentElement("afterend", ds); } if (ds.textContent !== txt) ds.textContent = txt; }
