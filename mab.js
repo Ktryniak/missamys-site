@@ -1,15 +1,17 @@
+/*! Miss Amy's Bakery site helpers (mab.js) v3.1 | (c) 2026 TryLab Studio. All rights reserved. Licensed for missamysbakery.com only. */
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v3.0
+   Miss Amy's Bakery - site helpers (mab.js) v3.1
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
    that part simply does nothing. Moving between pages with the menu is handled too.
-   To change a part: edit the "EDIT HERE" lines inside it, upload this file to GitHub,
-   then open https://purge.jsdelivr.net/gh/Ktryniak/missamys-site@main/mab.js
+   To change a part: edit the "EDIT HERE" lines inside it and commit this file on GitHub.
+   Cloudflare Pages then builds a small (minified) copy by itself, live in about a minute.
+   The first line (starting with /*!) is kept in the minified copy: it is the copyright line.
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "3.0";
+  window.MAB = "3.1";
   var M = [];
   /* run a part in the next frame, before the browser paints (no flash of the old design) */
   function mabQ(id, f){ if (id) cancelAnimationFrame(id); return requestAnimationFrame(function(){ try { f(); } catch (e) {} }); }
