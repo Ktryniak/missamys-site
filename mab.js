@@ -1,5 +1,5 @@
 /* =====================================================================
-   Miss Amy's Bakery - site helpers (mab.js) v2.5
+   Miss Amy's Bakery - site helpers (mab.js) v2.6
    Design + code: TryLab Studio
    Loaded once on every page (Square Site-wide custom code + a tiny Embed for the editor).
    Each part below looks for its own Square blocks by id. If a block is not on the page,
@@ -9,7 +9,7 @@
    ===================================================================== */
 (function(){
   if (window.MAB) return;
-  window.MAB = "2.5";
+  window.MAB = "2.6";
   var M = [];
   /* run a part in the next frame, before the browser paints (no flash of the old design) */
   function mabQ(id, f){ if (id) cancelAnimationFrame(id); return requestAnimationFrame(function(){ try { f(); } catch (e) {} }); }
@@ -1930,7 +1930,12 @@
       T + " p:first-child+p:not(:has(>br:only-child)){border-top:1px solid " + LINE + ";padding-top:14px!important}" +
       T + " p:last-child:not(:first-child){padding-bottom:14px!important;border-bottom:1px solid " + LINE + "}" +
       T + " p:first-child+p:has(>br:only-child){margin-top:0!important}" +
-      "@media(max-width:767px){" + T + " p{font-size:1rem!important}" + T + " p:first-child{font-size:1.1rem!important}}";
+      "@media(max-width:767px){" + T + " p{font-size:1rem!important}" + T + " p:first-child{font-size:1.1rem!important}}" +
+      /* Buttons: in this block Square puts the class "button" on the link itself (other pages wrap it in a div.button),
+         so wrapper styles hit the filled button and its text went raspberry on raspberry. Same look as everywhere: */
+      "a.button.w-button:not(.mf):not(.mab-arrowbtn){background-color:var(--color-main)!important;opacity:1!important}" +
+      "a.button.w-button:not(.mf):not(.mab-arrowbtn)>span{position:relative;z-index:2}" +
+      "a.button.w-button:not(.mf):not(.mab-arrowbtn) *:not(.bb){color:var(--color-contrast,#fff)!important;opacity:1!important;visibility:visible!important}";
     var st = D.createElement("style"); st.textContent = S; D.head.appendChild(st);
   }]);
 
@@ -1981,8 +1986,11 @@
       L + " a.router-link-exact-active{background:linear-gradient(" + BLUSH + "," + BLUSH + ") 0 58%/100% .9em no-repeat!important}" +
       /* About + its submenu */
       N + " .subnav__nested .parent-link-wrapper{display:flex!important;align-items:center!important;justify-content:" + (ALIGN === "center" ? "center" : "space-between") + "!important;gap:14px}" +
-      N + " .subnav__nested .subnav-icon{display:grid!important;place-items:center;width:32px;height:32px;border:1.5px solid " + INK + ";border-radius:50%;color:" + INK + "!important;flex:none}" +
-      N + " .subnav__nested .subnav-icon .icon{--color:" + INK + "!important;--icon-size:14px!important;color:" + INK + "!important}" +
+      N + " .subnav__nested .subnav-icon{display:grid!important;place-items:center!important;width:36px!important;height:36px!important;padding:0!important;margin:0!important;box-sizing:border-box!important;line-height:0!important;border:1.5px solid " + INK + ";border-radius:50%;color:" + INK + "!important;flex:none;transform-origin:50% 50%!important}" +
+      N + " .subnav__nested .subnav-icon .icon{--color:" + INK + "!important;--icon-size:14px!important;color:" + INK + "!important;display:block!important;position:static!important;width:14px!important;height:14px!important;margin:0!important;padding:0!important;inset:auto!important;transform-origin:50% 50%!important}" +
+      N + " .subnav__nested .subnav-icon svg{display:block!important;width:100%!important;height:100%!important}" +
+      L + ">.nav__item>a," + N + " .subnav__nested .parent-link{border:0!important;box-shadow:none!important}" +
+      L + ">.nav__item>a:before," + L + ">.nav__item>a:after," + N + " .subnav__nested .parent-link:before," + N + " .subnav__nested .parent-link:after," + L + ">.nav__item:before," + L + ">.nav__item:after{display:none!important;content:none!important}" +
       N + " .subnav__nested .nested-menu{margin:0!important;padding:0 0 12px!important;text-align:" + ALIGN + "!important}" +
       N + " .subnav__nested .nested-menu .nav__item{margin:0!important;padding:0!important;border:0!important}" +
       N + " .subnav__nested .nested-menu a{display:inline-block!important;padding:8px 0!important;font:700 .82rem/1.2 " + BOLD + "!important;letter-spacing:.14em!important;text-transform:uppercase!important;color:" + INK + "!important;text-decoration:none!important}" +
@@ -1993,6 +2001,10 @@
       N + " .sign-in-link button>span{display:inline-flex!important;align-items:center!important;gap:10px!important;font:700 .85rem/1 " + BOLD + "!important;letter-spacing:.14em!important;text-transform:uppercase!important;color:" + INK + "!important}" +
       (SIGNIN_ICON ? N + " .sign-in-link .icon{display:none!important}" : N + " .sign-in-link .icon{--color:" + INK + "!important}") +
       ".mabmn-ic{font-size:24px;line-height:1;color:" + INK + "}" +
+      /* Square sign-in window: our icon instead of the person icon */
+      (SIGNIN_ICON ? ".login-content .icon-container>.icon{display:none!important}" +
+        ".login-content .icon-container{width:56px!important;height:56px!important;border-radius:50%!important;background:" + BLUSH + "!important;color:" + INK + "!important}" +
+        ".mabmn-lic{font-size:30px;line-height:1;color:" + INK + "}" : "") +
       /* social row */
       ".mabmn-soc{display:flex;gap:10px;justify-content:" + (ALIGN === "center" ? "center" : "flex-start") + ";padding:14px 0 32px}" +
       ".mabmn-soc a{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:" + INK + ";color:#fff!important;text-decoration:none!important;transition:transform .2s ease}" +
@@ -2020,6 +2032,9 @@
             var im = D.createElement("img"); im.src = src; im.alt = "Miss Amy\u2019s Bakery"; a.appendChild(im); cell.appendChild(a);
           }
         }
+        /* Square sign-in window */
+        if (SIGNIN_ICON) { var lc = D.querySelectorAll(".login-content .icon-container");
+          for (var k = 0; k < lc.length; k++) if (!lc[k].querySelector(".mabmn-lic")) { var li2 = D.createElement("i"); li2.className = SIGNIN_ICON + " mabmn-lic"; li2.setAttribute("aria-hidden", "true"); lc[k].appendChild(li2); } }
         /* Sign In: our icon */
         var si = m.querySelector(".sign-in-link");
         if (si) {
